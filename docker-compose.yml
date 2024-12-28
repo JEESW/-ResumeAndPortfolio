@@ -1,0 +1,26 @@
+version: "3.8"
+services:
+  backend:
+    build:
+      context: ./backend/Resume-And-Portfolio
+    ports:
+      - "8080:8080"
+    networks:
+      - app-network
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+
+  frontend:
+    build:
+      context: ./frontend/my-app
+    ports:
+      - "3000:80"
+    networks:
+      - app-network
+    depends_on:
+      - backend
+    environment:
+      - REACT_APP_API_URL=http://backend:8080
+
+networks:
+  app-network:
