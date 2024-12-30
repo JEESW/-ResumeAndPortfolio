@@ -6,6 +6,8 @@ COPY gradlew /app/gradlew
 COPY build.gradle /app/build.gradle
 COPY settings.gradle /app/settings.gradle
 
+RUN chmod +x gradlew
+
 RUN ./gradlew dependencies --no-daemon
 
 COPY . .
