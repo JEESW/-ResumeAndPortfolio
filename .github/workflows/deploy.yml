@@ -59,14 +59,16 @@ jobs:
           
           # 최신 이미지 풀링
           docker-compose pull
-          
-          # 환경 변수 설정
-          export SPRING_DATASOURCE_URL=${{ secrets.SPRING_DATASOURCE_URL }}
-          export SPRING_DATASOURCE_USERNAME=${{ secrets.SPRING_DATASOURCE_USERNAME }}
-          export SPRING_DATASOURCE_PASSWORD=${{ secrets.SPRING_DATASOURCE_PASSWORD }}
-          export SPRING_JPA_HIBERNATE_DDL_AUTO=${{ secrets.SPRING_JPA_HIBERNATE_DDL_AUTO }}
-          export SPRING_JPA_SHOW_SQL=${{ secrets.SPRING_JPA_SHOW_SQL }}
-          export REACT_APP_API_URL=${{ secrets.REACT_APP_API_URL }}
+
+          # 환경 변수 파일 생성
+          cat <<EOT > .env
+          SPRING_DATASOURCE_URL=${{ secrets.SPRING_DATASOURCE_URL }}
+          SPRING_DATASOURCE_USERNAME=${{ secrets.SPRING_DATASOURCE_USERNAME }}
+          SPRING_DATASOURCE_PASSWORD=${{ secrets.SPRING_DATASOURCE_PASSWORD }}
+          SPRING_JPA_HIBERNATE_DDL_AUTO=${{ secrets.SPRING_JPA_HIBERNATE_DDL_AUTO }}
+          SPRING_JPA_SHOW_SQL=${{ secrets.SPRING_JPA_SHOW_SQL }}
+          REACT_APP_API_URL=${{ secrets.REACT_APP_API_URL }}
+          EOT
 
           # 컨테이너 재시작
           docker-compose up -d
