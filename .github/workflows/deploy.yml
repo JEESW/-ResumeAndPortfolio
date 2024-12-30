@@ -1,0 +1,59 @@
+name: CI/CD for Develop Branch
+
+on:
+  push:
+    branches:
+      - develop
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    env:
+      AWS_REGION: ap-northeast-2
+      AWS_ECR_ACCOUNT_URL: 123456789012.dkr.ecr.ap-northeast-2.amazonaws.com
+      BACKEND_IMAGE: ${{ secrets.AWS_ECR_ACCOUNT_URL }}/resume-backend-app
+      FRONTEND_IMAGE: ${{ secrets.AWS_ECR_ACCOUNT_URL }}/resume-frontend-app
+
+    steps:
+    # 1. 소스코드 체크아웃
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    # 2. AWS CLI 설정
+    - name: Configure AWS CLI
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    # 3. Docker 로그인
+    - name: Log in to Amazon ECR
+      run: |
+        aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ECR_ACCOUNT_URL
+
+    # 4. Backend Docker 이미지 빌드 및 푸시
+    - name: Build and push backend image
+      working-directory: ./backend/Resume-And-Portfolio
+      run: |
+        docker build -t $BACKEND_IMAGE:latest .
+        docker push $BACKEND_IMAGE:latest
+
+    # 5. Frontend Docker 이미지 빌드 및 푸시
+    - name: Build and push frontend image
+      working-directory: ./frontend/my-app
+      run: |
+        docker build -t $FRONTEND_IMAGE:latest .
+        docker push $FRONTEND_IMAGE:latest
+
+    # 6. EC2에 배포
+    - name: Deploy to EC2
+      run: |
+        ssh -o StrictHostKeyChecking=no -i "${{ secrets.EC2_KEY_PAIR }}" ubuntu@${{ secrets.EC2_PUBLIC_IP }} << 'EOF'
+          aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ECR_ACCOUNT_URL
+          cd ~/app
+          docker-compose down
+          docker-compose pull
+          docker-compose up -d
+        EOF
