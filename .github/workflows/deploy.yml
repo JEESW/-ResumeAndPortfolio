@@ -11,9 +11,9 @@ jobs:
 
     env:
       AWS_REGION: ap-northeast-2
-      AWS_ECR_ACCOUNT_URL: 123456789012.dkr.ecr.ap-northeast-2.amazonaws.com
-      BACKEND_IMAGE: ${{ secrets.AWS_ECR_ACCOUNT_URL }}/resume-backend-app
-      FRONTEND_IMAGE: ${{ secrets.AWS_ECR_ACCOUNT_URL }}/resume-frontend-app
+      AWS_ECR_ACCOUNT_URL: 905418468164.dkr.ecr.ap-northeast-2.amazonaws.com
+      BACKEND_IMAGE: ${{ env.AWS_ECR_ACCOUNT_URL }}/resume-backend-app
+      FRONTEND_IMAGE: ${{ env.AWS_ECR_ACCOUNT_URL }}/resume-frontend-app
 
     steps:
     # 1. 소스코드 체크아웃
@@ -53,7 +53,21 @@ jobs:
         ssh -o StrictHostKeyChecking=no -i "${{ secrets.EC2_KEY_PAIR }}" ubuntu@${{ secrets.EC2_PUBLIC_IP }} << 'EOF'
           aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ECR_ACCOUNT_URL
           cd ~/app
+          
+          # 기존 컨테이너 중지 및 제거
           docker-compose down
+          
+          # 최신 이미지 풀링
           docker-compose pull
+          
+          # 환경 변수 설정
+          export SPRING_DATASOURCE_URL=${{ secrets.SPRING_DATASOURCE_URL }}
+          export SPRING_DATASOURCE_USERNAME=${{ secrets.SPRING_DATASOURCE_USERNAME }}
+          export SPRING_DATASOURCE_PASSWORD=${{ secrets.SPRING_DATASOURCE_PASSWORD }}
+          export SPRING_JPA_HIBERNATE_DDL_AUTO=${{ secrets.SPRING_JPA_HIBERNATE_DDL_AUTO }}
+          export SPRING_JPA_SHOW_SQL=${{ secrets.SPRING_JPA_SHOW_SQL }}
+          export REACT_APP_API_URL=${{ secrets.REACT_APP_API_URL }}
+
+          # 컨테이너 재시작
           docker-compose up -d
         EOF
