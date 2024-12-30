@@ -9,12 +9,6 @@ jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
-    env:
-      AWS_REGION: ap-northeast-2
-      AWS_ECR_ACCOUNT_URL: 905418468164.dkr.ecr.ap-northeast-2.amazonaws.com
-      BACKEND_IMAGE: ${{ env.AWS_ECR_ACCOUNT_URL }}/resume-backend-app
-      FRONTEND_IMAGE: ${{ env.AWS_ECR_ACCOUNT_URL }}/resume-frontend-app
-
     steps:
     # 1. 소스코드 체크아웃
     - name: Checkout code
@@ -26,37 +20,37 @@ jobs:
       with:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: ${{ env.AWS_REGION }}
+        aws-region: ap-northeast-2
 
     # 3. Docker 로그인
     - name: Log in to Amazon ECR
       run: |
-        aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ECR_ACCOUNT_URL
+        aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin 905418468164.dkr.ecr.ap-northeast-2.amazonaws.com
 
     # 4. Backend Docker 이미지 빌드 및 푸시
     - name: Build and push backend image
       working-directory: ./backend/Resume-And-Portfolio
       run: |
-        docker build -t $BACKEND_IMAGE:latest .
-        docker push $BACKEND_IMAGE:latest
+        docker build -t 905418468164.dkr.ecr.ap-northeast-2.amazonaws.com/resume-backend-app:latest .
+        docker push 905418468164.dkr.ecr.ap-northeast-2.amazonaws.com/resume-backend-app:latest
 
     # 5. Frontend Docker 이미지 빌드 및 푸시
     - name: Build and push frontend image
       working-directory: ./frontend/my-app
       run: |
-        docker build -t $FRONTEND_IMAGE:latest .
-        docker push $FRONTEND_IMAGE:latest
+        docker build -t 905418468164.dkr.ecr.ap-northeast-2.amazonaws.com/resume-frontend-app:latest .
+        docker push 905418468164.dkr.ecr.ap-northeast-2.amazonaws.com/resume-frontend-app:latest
 
     # 6. EC2에 배포
     - name: Deploy to EC2
       run: |
         ssh -o StrictHostKeyChecking=no -i "${{ secrets.EC2_KEY_PAIR }}" ubuntu@${{ secrets.EC2_PUBLIC_IP }} << 'EOF'
-          aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ECR_ACCOUNT_URL
+          aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin 905418468164.dkr.ecr.ap-northeast-2.amazonaws.com
           cd ~/app
-          
+
           # 기존 컨테이너 중지 및 제거
           docker-compose down
-          
+
           # 최신 이미지 풀링
           docker-compose pull
 
