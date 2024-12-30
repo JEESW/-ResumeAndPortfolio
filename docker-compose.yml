@@ -1,26 +1,28 @@
 version: "3.8"
 services:
   backend:
-    build:
-      context: ./backend/Resume-And-Portfolio
+    image: 905418468164.dkr.ecr.ap-northeast-2.amazonaws.com/resume-backend-app:latest
     ports:
       - "8080:8080"
+    environment:
+      - SPRING_DATASOURCE_URL=${SPRING_DATASOURCE_URL}
+      - SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD}
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=${SPRING_JPA_HIBERNATE_DDL_AUTO}
+      - SPRING_JPA_SHOW_SQL=${SPRING_JPA_SHOW_SQL}
     networks:
       - app-network
-    environment:
-      - SPRING_PROFILES_ACTIVE=dev
 
   frontend:
-    build:
-      context: ./frontend/my-app
+    image: 905418468164.dkr.ecr.ap-northeast-2.amazonaws.com/resume-frontend-app:latest
     ports:
       - "3000:80"
-    networks:
-      - app-network
     depends_on:
       - backend
     environment:
-      - REACT_APP_API_URL=http://backend:8080
+      - REACT_APP_API_URL=${REACT_APP_API_URL}
+    networks:
+      - app-network
 
 networks:
   app-network:
