@@ -1,5 +1,6 @@
 import React from "react";
 import Header from "./components/Header/Header";
+import Footer from "./components/Footer/Footer";
 
 function App() {
   return (
@@ -16,6 +17,7 @@ function App() {
             <h1 className="text-4xl font-bold">Portfolio Page</h1>
           </section>
         </main>
+        <Footer />
       </div>
   );
 }
