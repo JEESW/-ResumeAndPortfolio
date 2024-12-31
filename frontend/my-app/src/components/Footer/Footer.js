@@ -13,22 +13,22 @@ const Footer = () => {
           <nav className="my-4 md:my-0">
             <ul className="flex space-x-6">
               <li>
-                <a href="#home" className="text-gray-300 hover:text-white">
+                <a href="/" className="text-gray-300 hover:text-white">
                   Home
                 </a>
               </li>
               <li>
-                <a href="#resume" className="text-gray-300 hover:text-white">
+                <a href="/resume" className="text-gray-300 hover:text-white">
                   Resume
                 </a>
               </li>
               <li>
-                <a href="#portfolio" className="text-gray-300 hover:text-white">
+                <a href="/portfolio" className="text-gray-300 hover:text-white">
                   Portfolio
                 </a>
               </li>
               <li>
-                <a href="#faq" className="text-gray-300 hover:text-white">
+                <a href="/faq" className="text-gray-300 hover:text-white">
                   FAQ
                 </a>
               </li>
