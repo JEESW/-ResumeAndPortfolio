@@ -11,16 +11,16 @@ const Header = () => {
 
           {/* 네비게이션 */}
           <nav className="hidden md:flex space-x-6">
-            <a href="#home" className="text-gray-700 hover:text-blue-600">
+            <a href="/" className="text-gray-700 hover:text-blue-600">
               Home
             </a>
-            <a href="#resume" className="text-gray-700 hover:text-blue-600">
+            <a href="/resume" className="text-gray-700 hover:text-blue-600">
               Resume
             </a>
-            <a href="#portfolio" className="text-gray-700 hover:text-blue-600">
+            <a href="/portfolio" className="text-gray-700 hover:text-blue-600">
               Portfolio
             </a>
-            <a href="#faq" className="text-gray-700 hover:text-blue-600">
+            <a href="/faq" className="text-gray-700 hover:text-blue-600">
               FAQ
             </a>
           </nav>
