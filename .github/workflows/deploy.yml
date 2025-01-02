@@ -38,7 +38,8 @@ jobs:
     - name: Build and push frontend image
       working-directory: ./frontend/my-app
       run: |
-        docker build -t 905418468164.dkr.ecr.ap-northeast-2.amazonaws.com/resume-frontend-app:latest .
+        docker build --build-arg REACT_APP_API_URL=${{ secrets.REACT_APP_API_URL }} \
+                     -t 905418468164.dkr.ecr.ap-northeast-2.amazonaws.com/resume-frontend-app:latest .
         docker push 905418468164.dkr.ecr.ap-northeast-2.amazonaws.com/resume-frontend-app:latest
 
     # 6. SSH 키 추가
@@ -51,11 +52,13 @@ jobs:
     - name: Deploy to EC2
       run: |
         ssh -o StrictHostKeyChecking=no -i ec2-key.pem ubuntu@${{ secrets.EC2_PUBLIC_IP }} << 'EOF'
+          # Docker 로그인
           aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin 905418468164.dkr.ecr.ap-northeast-2.amazonaws.com
           cd ~/app
 
-          # 기존 컨테이너 중지 및 제거
+          # 기존 컨테이너 중지 및 모든 이미지 제거
           docker-compose down
+          docker image prune -af
 
           # 최신 이미지 풀링
           docker-compose pull
