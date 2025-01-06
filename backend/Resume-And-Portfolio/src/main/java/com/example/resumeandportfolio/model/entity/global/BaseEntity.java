@@ -21,10 +21,12 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @EntityListeners(AuditingEntityListener.class)
 public abstract class BaseEntity {
 
+    // 생성 일자
     @CreatedDate
     @Column(updatable = false)
     private LocalDateTime createdAt;
 
+    // 수정 일자
     @LastModifiedDate
     private LocalDateTime updatedAt;
 }
