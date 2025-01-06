@@ -3,6 +3,7 @@ package com.example.resumeandportfolio.controller.user;
 import com.example.resumeandportfolio.exception.CustomException;
 import com.example.resumeandportfolio.exception.ErrorCode;
 import com.example.resumeandportfolio.exception.GlobalExceptionHandler;
+import com.example.resumeandportfolio.model.dto.user.UserLoginResponse;
 import com.example.resumeandportfolio.model.entity.user.User;
 import com.example.resumeandportfolio.model.enums.Role;
 import com.example.resumeandportfolio.service.user.UserService;
@@ -14,6 +15,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
@@ -52,15 +54,20 @@ public class UserControllerTest {
         // Given: 로그인 성공 시 반환할 사용자 설정
         User user = new User("test@example.com", "encoded_password", "tester", Role.VISITOR);
 
+        UserLoginResponse response = new UserLoginResponse(
+            user.getUserId(),
+            user.getEmail(),
+            user.getNickname()
+        );
+
         // Mocking: UserService.login 호출 시 성공적으로 사용자 반환
         Mockito.when(userService.login("test@example.com", "correct_password"))
             .thenReturn(user);
 
         // When & Then: API 호출 및 검증
         mockMvc.perform(post("/api/users/login")
-                .param("email", "test@example.com")
-                .param("password", "correct_password")
-                .sessionAttr("user", user))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"email\": \"test@example.com\", \"password\": \"correct_password\"}"))
             .andExpect(status().isOk());
     }
 
@@ -71,9 +78,10 @@ public class UserControllerTest {
         Mockito.when(userService.login("notfound@example.com", "password"))
             .thenThrow(new CustomException(ErrorCode.USER_NOT_FOUND));
 
+        // When & Then
         mockMvc.perform(post("/api/users/login")
-                .param("email", "notfound@example.com")
-                .param("password", "password"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"email\": \"notfound@example.com\", \"password\": \"password\"}"))
             .andExpect(status().isNotFound());
     }
 
@@ -84,9 +92,10 @@ public class UserControllerTest {
         Mockito.when(userService.login("test@example.com", "wrong_password"))
             .thenThrow(new CustomException(ErrorCode.INVALID_PASSWORD));
 
+        // When & Then
         mockMvc.perform(post("/api/users/login")
-                .param("email", "test@example.com")
-                .param("password", "wrong_password"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"email\": \"test@example.com\", \"password\": \"wrong_password\"}"))
             .andExpect(status().isUnauthorized());
     }
 
