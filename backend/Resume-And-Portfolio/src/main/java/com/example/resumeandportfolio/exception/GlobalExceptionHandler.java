@@ -19,7 +19,7 @@ public class GlobalExceptionHandler {
     // 커스텀 예외 처리
     @ExceptionHandler(CustomException.class)
     public ResponseEntity<Map<String, String>> handleCustomException(CustomException ex) {
-        return ResponseEntity.badRequest().body(Map.of(
+        return ResponseEntity.status(ex.getStatus()).body(Map.of(
             "errorCode", ex.getErrorCode().getCode(),
             "message", ex.getErrorCode().getMessage()
         ));
