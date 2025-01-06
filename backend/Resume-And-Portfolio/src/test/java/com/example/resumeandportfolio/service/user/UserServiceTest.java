@@ -19,6 +19,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
+/**
+ * User's Service Test
+ *
+ * @author Ji-Seungwoo
+ * @version 1.0
+ */
+
 @ExtendWith(MockitoExtension.class)
 public class UserServiceTest {
 

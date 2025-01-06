@@ -21,6 +21,13 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+/**
+ * User's Controller Test
+ *
+ * @author Ji-Seungwoo
+ * @version 1.0
+ */
+
 @ExtendWith(MockitoExtension.class)
 public class UserControllerTest {
 

@@ -12,6 +12,13 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+/**
+ * User's Repository Test
+ *
+ * @author Ji-Seungwoo
+ * @version 1.0
+ */
+
 @DataJpaTest
 @ActiveProfiles("test")
 public class UserRepositoryTest {

@@ -8,6 +8,13 @@ import org.springframework.web.bind.annotation.*;
 
 import jakarta.servlet.http.HttpSession;
 
+/**
+ * User's Controller
+ *
+ * @author Ji-Seungwoo
+ * @version 1.0
+ */
+
 @RestController
 @RequestMapping("/api/users")
 @RequiredArgsConstructor
