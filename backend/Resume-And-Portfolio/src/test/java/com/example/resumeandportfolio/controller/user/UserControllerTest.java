@@ -3,10 +3,12 @@ package com.example.resumeandportfolio.controller.user;
 import com.example.resumeandportfolio.exception.CustomException;
 import com.example.resumeandportfolio.exception.ErrorCode;
 import com.example.resumeandportfolio.exception.GlobalExceptionHandler;
-import com.example.resumeandportfolio.model.dto.user.UserLoginResponse;
+import com.example.resumeandportfolio.model.dto.user.UserRegisterRequest;
+import com.example.resumeandportfolio.model.dto.user.UserRegisterResponse;
 import com.example.resumeandportfolio.model.entity.user.User;
 import com.example.resumeandportfolio.model.enums.Role;
 import com.example.resumeandportfolio.service.user.UserService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -19,6 +21,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -41,8 +44,11 @@ public class UserControllerTest {
     @InjectMocks
     private UserController userController;
 
+    private ObjectMapper objectMapper;
+
     @BeforeEach
     void setUp() {
+        objectMapper = new ObjectMapper();
         mockMvc = MockMvcBuilders.standaloneSetup(userController)
             .setControllerAdvice(new GlobalExceptionHandler())
             .build();
@@ -53,12 +59,6 @@ public class UserControllerTest {
     void loginSuccessTest() throws Exception {
         // Given: 로그인 성공 시 반환할 사용자 설정
         User user = new User("test@example.com", "encoded_password", "tester", Role.VISITOR);
-
-        UserLoginResponse response = new UserLoginResponse(
-            user.getUserId(),
-            user.getEmail(),
-            user.getNickname()
-        );
 
         // Mocking: UserService.login 호출 시 성공적으로 사용자 반환
         Mockito.when(userService.login("test@example.com", "correct_password"))
@@ -107,5 +107,71 @@ public class UserControllerTest {
         mockMvc.perform(post("/api/users/logout")
                 .with(csrf()))
             .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("회원가입 성공 테스트")
+    void registerSuccessTest() throws Exception {
+        // Given
+        UserRegisterRequest request = new UserRegisterRequest(
+            "test@example.com",
+            "password123",
+            "nickname"
+        );
+
+        UserRegisterResponse response = new UserRegisterResponse(
+            1L,
+            "test@example.com",
+            "nickname",
+            null
+        );
+
+        // Mocking
+        Mockito.when(userService.register(any(UserRegisterRequest.class)))
+            .thenReturn(response);
+
+        // When & Then
+        mockMvc.perform(post("/api/users/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isCreated());
+    }
+
+    @Test
+    @DisplayName("회원가입 실패 테스트 - 이메일 중복")
+    void registerFailureEmailAlreadyExistsTest() throws Exception {
+        // Given
+        UserRegisterRequest request = new UserRegisterRequest(
+            "duplicate@example.com",
+            "password123",
+            "nickname"
+        );
+
+        // Mocking
+        Mockito.when(userService.register(any(UserRegisterRequest.class)))
+            .thenThrow(new CustomException(ErrorCode.EMAIL_ALREADY_EXISTS));
+
+        // When & Then
+        mockMvc.perform(post("/api/users/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isConflict());
+    }
+
+    @Test
+    @DisplayName("회원가입 실패 테스트 - 유효하지 않은 요청 데이터")
+    void registerFailureInvalidRequestTest() throws Exception {
+        // Given: 잘못된 요청 데이터 (비밀번호 길이 부족)
+        UserRegisterRequest request = new UserRegisterRequest(
+            "invalid@example.com",
+            "short",
+            "nickname"
+        );
+
+        // When & Then
+        mockMvc.perform(post("/api/users/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isBadRequest());
     }
 }

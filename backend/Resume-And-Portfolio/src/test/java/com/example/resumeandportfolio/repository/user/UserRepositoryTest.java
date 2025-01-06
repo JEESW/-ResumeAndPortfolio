@@ -57,4 +57,33 @@ public class UserRepositoryTest {
         // Then: 결과 검증
         assertThat(result).isNotPresent();
     }
+
+    @Test
+    @DisplayName("이메일 중복 여부 확인 - 중복된 이메일 존재")
+    void existsByEmailTrue() {
+        // Given: 테스트 데이터 삽입
+        User user = User.builder()
+            .email("duplicate@example.com")
+            .password("encoded_password")
+            .nickname("DuplicateUser")
+            .role(Role.VISITOR)
+            .build();
+        userRepository.save(user);
+
+        // When: 중복 이메일 확인
+        boolean result = userRepository.existsByEmail("duplicate@example.com");
+
+        // Then: 결과 검증
+        assertThat(result).isTrue();
+    }
+
+    @Test
+    @DisplayName("이메일 중복 여부 확인 - 중복된 이메일 없음")
+    void existsByEmailFalse() {
+        // When: 중복 이메일 확인
+        boolean result = userRepository.existsByEmail("notfound@example.com");
+
+        // Then: 결과 검증
+        assertThat(result).isFalse();
+    }
 }
