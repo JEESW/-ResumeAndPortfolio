@@ -2,7 +2,10 @@ package com.example.resumeandportfolio.service.user;
 
 import com.example.resumeandportfolio.exception.CustomException;
 import com.example.resumeandportfolio.exception.ErrorCode;
+import com.example.resumeandportfolio.model.dto.user.UserRegisterRequest;
+import com.example.resumeandportfolio.model.dto.user.UserRegisterResponse;
 import com.example.resumeandportfolio.model.entity.user.User;
+import com.example.resumeandportfolio.model.enums.Role;
 import com.example.resumeandportfolio.repository.user.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -99,5 +102,60 @@ public class UserServiceTest {
         assertEquals(ErrorCode.INVALID_PASSWORD, exception.getErrorCode());
         verify(userRepository, times(1)).findByEmail("test@example.com");
         verify(passwordEncoder, times(1)).matches("wrong_password", "encoded_password");
+    }
+
+    @Test
+    @DisplayName("회원가입 성공 테스트")
+    void registerSuccessTest() {
+        // Given: 회원가입 요청 데이터와 이미 사용하지 않은 이메일
+        UserRegisterRequest request = new UserRegisterRequest("new@example.com", "password123", "NewUser");
+
+        when(userRepository.existsByEmail("new@example.com"))
+            .thenReturn(false);
+        when(passwordEncoder.encode("password123"))
+            .thenReturn("encoded_password");
+        User savedUser = User.builder()
+            .email("new@example.com")
+            .password("encoded_password")
+            .nickname("NewUser")
+            .role(Role.VISITOR)
+            .build();
+        when(userRepository.save(any(User.class)))
+            .thenReturn(savedUser);
+
+        // When: 회원가입 서비스 호출
+        UserRegisterResponse response = userService.register(request);
+
+        // Then: 결과 검증
+        assertEquals("new@example.com", response.email());
+        assertEquals("NewUser", response.nickname());
+        assertEquals(Role.VISITOR, response.role());
+
+        // Verify: Mock 메서드 호출 검증
+        verify(userRepository, times(1)).existsByEmail("new@example.com");
+        verify(passwordEncoder, times(1)).encode("password123");
+        verify(userRepository, times(1)).save(any(User.class));
+    }
+
+    @Test
+    @DisplayName("회원가입 실패 테스트 - 이메일 중복")
+    void registerFailureEmailAlreadyExistsTest() {
+        // Given: 중복된 이메일이 존재하는 경우
+        UserRegisterRequest request = new UserRegisterRequest("duplicate@example.com", "password123", "DuplicateUser");
+
+        when(userRepository.existsByEmail("duplicate@example.com"))
+            .thenReturn(true);
+
+        // When & Then: 예외 검증
+        CustomException exception = assertThrows(CustomException.class, () ->
+            userService.register(request)
+        );
+
+        assertEquals(ErrorCode.EMAIL_ALREADY_EXISTS, exception.getErrorCode());
+
+        // Verify: Mock 메서드 호출 검증
+        verify(userRepository, times(1)).existsByEmail("duplicate@example.com");
+        verifyNoInteractions(passwordEncoder);
+        verify(userRepository, times(0)).save(any(User.class));
     }
 }

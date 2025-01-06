@@ -3,9 +3,12 @@ package com.example.resumeandportfolio.controller.user;
 import com.example.resumeandportfolio.exception.CustomException;
 import com.example.resumeandportfolio.exception.ErrorCode;
 import com.example.resumeandportfolio.exception.GlobalExceptionHandler;
+import com.example.resumeandportfolio.model.dto.user.UserRegisterRequest;
+import com.example.resumeandportfolio.model.dto.user.UserRegisterResponse;
 import com.example.resumeandportfolio.model.entity.user.User;
 import com.example.resumeandportfolio.model.enums.Role;
 import com.example.resumeandportfolio.service.user.UserService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -14,9 +17,11 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -39,8 +44,11 @@ public class UserControllerTest {
     @InjectMocks
     private UserController userController;
 
+    private ObjectMapper objectMapper;
+
     @BeforeEach
     void setUp() {
+        objectMapper = new ObjectMapper();
         mockMvc = MockMvcBuilders.standaloneSetup(userController)
             .setControllerAdvice(new GlobalExceptionHandler())
             .build();
@@ -58,9 +66,8 @@ public class UserControllerTest {
 
         // When & Then: API 호출 및 검증
         mockMvc.perform(post("/api/users/login")
-                .param("email", "test@example.com")
-                .param("password", "correct_password")
-                .sessionAttr("user", user))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"email\": \"test@example.com\", \"password\": \"correct_password\"}"))
             .andExpect(status().isOk());
     }
 
@@ -71,9 +78,10 @@ public class UserControllerTest {
         Mockito.when(userService.login("notfound@example.com", "password"))
             .thenThrow(new CustomException(ErrorCode.USER_NOT_FOUND));
 
+        // When & Then
         mockMvc.perform(post("/api/users/login")
-                .param("email", "notfound@example.com")
-                .param("password", "password"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"email\": \"notfound@example.com\", \"password\": \"password\"}"))
             .andExpect(status().isNotFound());
     }
 
@@ -84,9 +92,10 @@ public class UserControllerTest {
         Mockito.when(userService.login("test@example.com", "wrong_password"))
             .thenThrow(new CustomException(ErrorCode.INVALID_PASSWORD));
 
+        // When & Then
         mockMvc.perform(post("/api/users/login")
-                .param("email", "test@example.com")
-                .param("password", "wrong_password"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"email\": \"test@example.com\", \"password\": \"wrong_password\"}"))
             .andExpect(status().isUnauthorized());
     }
 
@@ -98,5 +107,71 @@ public class UserControllerTest {
         mockMvc.perform(post("/api/users/logout")
                 .with(csrf()))
             .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("회원가입 성공 테스트")
+    void registerSuccessTest() throws Exception {
+        // Given
+        UserRegisterRequest request = new UserRegisterRequest(
+            "test@example.com",
+            "password123",
+            "nickname"
+        );
+
+        UserRegisterResponse response = new UserRegisterResponse(
+            1L,
+            "test@example.com",
+            "nickname",
+            null
+        );
+
+        // Mocking
+        Mockito.when(userService.register(any(UserRegisterRequest.class)))
+            .thenReturn(response);
+
+        // When & Then
+        mockMvc.perform(post("/api/users/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isCreated());
+    }
+
+    @Test
+    @DisplayName("회원가입 실패 테스트 - 이메일 중복")
+    void registerFailureEmailAlreadyExistsTest() throws Exception {
+        // Given
+        UserRegisterRequest request = new UserRegisterRequest(
+            "duplicate@example.com",
+            "password123",
+            "nickname"
+        );
+
+        // Mocking
+        Mockito.when(userService.register(any(UserRegisterRequest.class)))
+            .thenThrow(new CustomException(ErrorCode.EMAIL_ALREADY_EXISTS));
+
+        // When & Then
+        mockMvc.perform(post("/api/users/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isConflict());
+    }
+
+    @Test
+    @DisplayName("회원가입 실패 테스트 - 유효하지 않은 요청 데이터")
+    void registerFailureInvalidRequestTest() throws Exception {
+        // Given: 잘못된 요청 데이터 (비밀번호 길이 부족)
+        UserRegisterRequest request = new UserRegisterRequest(
+            "invalid@example.com",
+            "short",
+            "nickname"
+        );
+
+        // When & Then
+        mockMvc.perform(post("/api/users/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isBadRequest());
     }
 }
