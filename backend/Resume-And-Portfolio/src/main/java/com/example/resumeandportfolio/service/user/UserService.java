@@ -2,8 +2,11 @@ package com.example.resumeandportfolio.service.user;
 
 import com.example.resumeandportfolio.exception.CustomException;
 import com.example.resumeandportfolio.exception.ErrorCode;
+import com.example.resumeandportfolio.model.dto.user.UserRegisterRequest;
+import com.example.resumeandportfolio.model.dto.user.UserRegisterResponse;
 import com.example.resumeandportfolio.model.entity.user.User;
 import com.example.resumeandportfolio.repository.user.UserRepository;
+import com.example.resumeandportfolio.util.mapper.UserMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -33,5 +36,20 @@ public class UserService {
         }
 
         return user;
+    }
+
+    // 회원가입 로직
+    public UserRegisterResponse register(UserRegisterRequest request) {
+        // 이메일 중복 확인
+        if (userRepository.existsByEmail(request.email())) {
+            throw new CustomException(ErrorCode.EMAIL_ALREADY_EXISTS);
+        }
+
+        String encodedPassword = passwordEncoder.encode(request.password());
+
+        User user = UserMapper.toEntity(request, encodedPassword);
+        User savedUser = userRepository.save(user);
+
+        return UserMapper.toResponse(savedUser);
     }
 }
