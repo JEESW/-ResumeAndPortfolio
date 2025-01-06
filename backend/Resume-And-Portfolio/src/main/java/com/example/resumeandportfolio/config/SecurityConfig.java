@@ -3,8 +3,8 @@ package com.example.resumeandportfolio.config;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 
@@ -16,7 +16,6 @@ import org.springframework.security.web.SecurityFilterChain;
  */
 
 @Configuration
-@EnableWebSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
 
@@ -24,10 +23,19 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            .csrf().disable()
+            .csrf(csrf -> csrf.disable())
+            .cors(Customizer.withDefaults())
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/").permitAll()
                 .anyRequest().authenticated()
+            )
+            .logout(logout -> logout
+                .logoutUrl("/api/users/logout")
+                .logoutSuccessHandler((request, response, authentication) -> {
+                    response.setStatus(200); // 로그아웃 성공 시 HTTP 200 반환
+                })
+                .invalidateHttpSession(true) // 세션 무효화
+                .deleteCookies("JSESSIONID") // 쿠키 삭제
             );
 
         return http.build();
