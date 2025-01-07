@@ -3,6 +3,7 @@ package com.example.resumeandportfolio.util.mapper;
 import com.example.resumeandportfolio.model.dto.user.UserLoginResponse;
 import com.example.resumeandportfolio.model.dto.user.UserRegisterRequest;
 import com.example.resumeandportfolio.model.dto.user.UserRegisterResponse;
+import com.example.resumeandportfolio.model.dto.user.UserUpdateResponse;
 import com.example.resumeandportfolio.model.entity.user.User;
 import com.example.resumeandportfolio.model.enums.Role;
 
@@ -42,5 +43,24 @@ public class UserMapper {
             .nickname(request.nickname())
             .role(Role.VISITOR)
             .build();
+    }
+
+    // Entity → UserUpdateResponse DTO
+    public static UserUpdateResponse toUpdateResponse(User user) {
+        return new UserUpdateResponse(
+            user.getUserId(),
+            user.getEmail(),
+            user.getNickname(),
+            user.getRole()
+        );
+    }
+
+    // UserUpdateResponse → UserLoginResponse 변환 메서드 추가
+    public static UserLoginResponse toLoginResponse(UserUpdateResponse response) {
+        return new UserLoginResponse(
+            response.userId(),
+            response.email(),
+            response.nickname()
+        );
     }
 }
