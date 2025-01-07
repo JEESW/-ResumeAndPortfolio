@@ -56,6 +56,16 @@ public class User extends BaseEntity {
         this.role = role;
     }
 
+    // 닉네임 수정 메서드
+    public void updateNickname(String nickname) {
+        this.nickname = nickname;
+    }
+
+    // 비밀번호 수정 메서드
+    public void updatePassword(String password) {
+        this.password = password;
+    }
+
     // 소프트 딜리트 메서드
     public void delete() {
         this.deletedAt = LocalDateTime.now();
