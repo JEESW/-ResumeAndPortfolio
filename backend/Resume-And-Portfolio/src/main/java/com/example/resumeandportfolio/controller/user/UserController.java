@@ -8,7 +8,6 @@ import com.example.resumeandportfolio.model.dto.user.UserRegisterResponse;
 import com.example.resumeandportfolio.model.dto.user.UserRegisterRequest;
 import com.example.resumeandportfolio.model.dto.user.UserUpdateRequest;
 import com.example.resumeandportfolio.model.dto.user.UserUpdateResponse;
-import com.example.resumeandportfolio.model.entity.user.User;
 import com.example.resumeandportfolio.service.user.UserService;
 import com.example.resumeandportfolio.util.mapper.UserMapper;
 import jakarta.validation.Valid;
@@ -39,11 +38,9 @@ public class UserController {
         @Valid @RequestBody UserLoginRequest request,
         HttpSession session
     ) {
-        User user = userService.login(request.email(), request.password());
+        UserLoginResponse response = userService.login(request.email(), request.password());
 
-        session.setAttribute("user", user);
-
-        UserLoginResponse response = UserMapper.toLoginResponse(user);
+        session.setAttribute("user", response);
 
         return ResponseEntity.ok(response);
     }
@@ -58,7 +55,8 @@ public class UserController {
     // 회원 가입 API
     @PostMapping("/register")
     public ResponseEntity<UserRegisterResponse> register(
-        @Valid @RequestBody UserRegisterRequest request) {
+        @Valid @RequestBody UserRegisterRequest request
+    ) {
         UserRegisterResponse response = userService.register(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
@@ -67,19 +65,18 @@ public class UserController {
     @PutMapping("/update")
     public ResponseEntity<UserUpdateResponse> updateUser(
         @Valid @RequestBody UserUpdateRequest request,
-        HttpSession session) {
-        User sessionUser = (User) session.getAttribute("user");
+        HttpSession session
+    ) {
+        UserLoginResponse sessionUser = (UserLoginResponse) session.getAttribute("user");
 
         // 로그인되지 않은 사용자인 경우 401 Unauthorized 반환
         if (sessionUser == null) {
             throw new CustomException(ErrorCode.UNAUTHORIZED);
         }
 
-        User updatedUser = userService.updateUser(sessionUser.getUserId(), request);
+        UserUpdateResponse response = userService.updateUser(sessionUser.userId(), request);
 
-        session.setAttribute("user", updatedUser);
-
-        UserUpdateResponse response = UserMapper.toUpdateResponse(updatedUser);
+        session.setAttribute("user", UserMapper.toLoginResponse(response));
 
         return ResponseEntity.ok(response);
     }

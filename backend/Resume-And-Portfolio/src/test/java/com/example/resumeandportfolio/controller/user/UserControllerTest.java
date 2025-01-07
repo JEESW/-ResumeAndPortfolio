@@ -3,10 +3,12 @@ package com.example.resumeandportfolio.controller.user;
 import com.example.resumeandportfolio.exception.CustomException;
 import com.example.resumeandportfolio.exception.ErrorCode;
 import com.example.resumeandportfolio.exception.GlobalExceptionHandler;
+import com.example.resumeandportfolio.model.dto.user.UserLoginRequest;
+import com.example.resumeandportfolio.model.dto.user.UserLoginResponse;
 import com.example.resumeandportfolio.model.dto.user.UserRegisterRequest;
 import com.example.resumeandportfolio.model.dto.user.UserRegisterResponse;
 import com.example.resumeandportfolio.model.dto.user.UserUpdateRequest;
-import com.example.resumeandportfolio.model.entity.user.User;
+import com.example.resumeandportfolio.model.dto.user.UserUpdateResponse;
 import com.example.resumeandportfolio.model.enums.Role;
 import com.example.resumeandportfolio.service.user.UserService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -61,11 +63,12 @@ public class UserControllerTest {
     @DisplayName("로그인 성공 테스트")
     void loginSuccessTest() throws Exception {
         // Given: 로그인 성공 시 반환할 사용자 설정
-        User user = new User("test@example.com", "encoded_password", "tester", Role.VISITOR);
+        UserLoginRequest request = new UserLoginRequest("test@example.com", "correct_password");
+        UserLoginResponse response = new UserLoginResponse(1L, "test@example.com", "tester");
 
-        // Mocking: UserService.login 호출 시 성공적으로 사용자 반환
-        Mockito.when(userService.login("test@example.com", "correct_password"))
-            .thenReturn(user);
+        // Mocking
+        Mockito.when(userService.login(request.email(), request.password()))
+            .thenReturn(response);
 
         // When & Then: API 호출 및 검증
         mockMvc.perform(post("/api/users/login")
@@ -188,32 +191,22 @@ public class UserControllerTest {
             "new_password123"
         );
 
-        User user = new User(
+        UserUpdateResponse response = new UserUpdateResponse(
+            1L,
             "test@example.com",
-            "encoded_new_password",
             "new_nickname",
             Role.VISITOR
         );
 
         // Mocking
         Mockito.when(userService.updateUser(eq(1L), any(UserUpdateRequest.class)))
-            .thenReturn(user);
+            .thenReturn(response);
 
         // When & Then
         mockMvc.perform(put("/api/users/update")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request))
-                .sessionAttr("user", new User(
-                    "test@example.com",
-                    "encoded_password",
-                    "old_nickname",
-                    Role.VISITOR
-                ) {
-                    @Override
-                    public Long getUserId() {
-                        return 1L;
-                    }
-                }))
+                .sessionAttr("user", new UserLoginResponse(1L, "test@example.com", "old_nickname")))
             .andExpect(status().isOk());
     }
 
@@ -252,17 +245,7 @@ public class UserControllerTest {
         mockMvc.perform(put("/api/users/update")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request))
-                .sessionAttr("user", new User(
-                    "test@example.com",
-                    "encoded_password",
-                    "old_nickname",
-                    Role.VISITOR
-                ) {
-                    @Override
-                    public Long getUserId() {
-                        return 1L;
-                    }
-                }))
+                .sessionAttr("user", new UserLoginResponse(1L, "test@example.com", "old_nickname")))
             .andExpect(status().isUnauthorized());
     }
 
@@ -284,17 +267,7 @@ public class UserControllerTest {
         mockMvc.perform(put("/api/users/update")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request))
-                .sessionAttr("user", new User(
-                    "test@example.com",
-                    "encoded_password",
-                    "old_nickname",
-                    Role.VISITOR
-                ) {
-                    @Override
-                    public Long getUserId() {
-                        return 1L;
-                    }
-                }))
+                .sessionAttr("user", new UserLoginResponse(1L, "test@example.com", "old_nickname")))
             .andExpect(status().isBadRequest());
     }
 }

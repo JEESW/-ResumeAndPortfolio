@@ -54,4 +54,13 @@ public class UserMapper {
             user.getRole()
         );
     }
+
+    // UserUpdateResponse → UserLoginResponse 변환 메서드 추가
+    public static UserLoginResponse toLoginResponse(UserUpdateResponse response) {
+        return new UserLoginResponse(
+            response.userId(),
+            response.email(),
+            response.nickname()
+        );
+    }
 }

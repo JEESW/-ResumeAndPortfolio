@@ -2,9 +2,11 @@ package com.example.resumeandportfolio.service.user;
 
 import com.example.resumeandportfolio.exception.CustomException;
 import com.example.resumeandportfolio.exception.ErrorCode;
+import com.example.resumeandportfolio.model.dto.user.UserLoginResponse;
 import com.example.resumeandportfolio.model.dto.user.UserRegisterRequest;
 import com.example.resumeandportfolio.model.dto.user.UserRegisterResponse;
 import com.example.resumeandportfolio.model.dto.user.UserUpdateRequest;
+import com.example.resumeandportfolio.model.dto.user.UserUpdateResponse;
 import com.example.resumeandportfolio.model.entity.user.User;
 import com.example.resumeandportfolio.model.enums.Role;
 import com.example.resumeandportfolio.repository.user.UserRepository;
@@ -52,19 +54,33 @@ public class UserServiceTest {
     @Test
     @DisplayName("로그인 성공 테스트")
     void loginSuccessTest() {
-        // Given: Repository와 PasswordEncoder 동작 정의
+        // Given
+        User testUserWithId = new User(
+            "test@example.com",
+            "encoded_password",
+            "Tester",
+            Role.VISITOR
+        ) {
+            @Override
+            public Long getUserId() {
+                return 1L;
+            }
+        };
+
         when(userRepository.findByEmail("test@example.com"))
-            .thenReturn(Optional.of(testUser));
+            .thenReturn(Optional.of(testUserWithId));
         when(passwordEncoder.matches("raw_password", "encoded_password"))
             .thenReturn(true);
 
-        // When: 서비스 호출
-        User result = userService.login("test@example.com", "raw_password");
+        // When
+        UserLoginResponse response = userService.login("test@example.com", "raw_password");
 
-        // Then: 결과 검증
-        assertEquals(testUser, result);
+        // Then
+        assertEquals(1L, response.userId());
+        assertEquals("test@example.com", response.email());
+        assertEquals("Tester", response.nickname());
 
-        // Verify: Mock 메서드 호출 검증
+        // Verify
         verify(userRepository, times(1)).findByEmail("test@example.com");
         verify(passwordEncoder, times(1)).matches("raw_password", "encoded_password");
     }
@@ -163,17 +179,17 @@ public class UserServiceTest {
     @Test
     @DisplayName("회원 수정 성공 테스트")
     void updateUserSuccessTest() {
-        // Given: 기존 사용자와 수정 요청 데이터
+        // Given
         UserUpdateRequest request = new UserUpdateRequest(
             "new_nickname",
             "current_password",
             "new_password123"
         );
 
-        User existingUser = new User(
+        User testUserWithId = new User(
             "test@example.com",
             "encoded_password",
-            "old_nickname",
+            "Tester",
             Role.VISITOR
         ) {
             @Override
@@ -182,19 +198,34 @@ public class UserServiceTest {
             }
         };
 
-        when(userRepository.findById(1L)).thenReturn(Optional.of(existingUser));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(testUserWithId));
         when(passwordEncoder.matches("current_password", "encoded_password")).thenReturn(true);
         when(passwordEncoder.encode("new_password123")).thenReturn("encoded_new_password");
-        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        // When: 회원 수정 서비스 호출
-        User updatedUser = userService.updateUser(1L, request);
+        User updatedUser = new User(
+            "test@example.com",
+            "encoded_new_password",
+            "new_nickname",
+            Role.VISITOR
+        ) {
+            @Override
+            public Long getUserId() {
+                return 1L;
+            }
+        };
 
-        // Then: 결과 검증
-        assertEquals("new_nickname", updatedUser.getNickname());
-        assertEquals("encoded_new_password", updatedUser.getPassword());
+        when(userRepository.save(any(User.class))).thenReturn(updatedUser);
 
-        // Verify: Mock 메서드 호출 검증
+        // When
+        UserUpdateResponse response = userService.updateUser(1L, request);
+
+        // Then
+        assertEquals(1L, response.userId());
+        assertEquals("test@example.com", response.email());
+        assertEquals("new_nickname", response.nickname());
+        assertEquals(Role.VISITOR, response.role());
+
+        // Verify
         verify(userRepository, times(1)).findById(1L);
         verify(passwordEncoder, times(1)).matches("current_password", "encoded_password");
         verify(passwordEncoder, times(1)).encode("new_password123");
