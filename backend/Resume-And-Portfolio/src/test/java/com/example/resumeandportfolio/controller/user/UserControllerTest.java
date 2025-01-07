@@ -5,6 +5,7 @@ import com.example.resumeandportfolio.exception.ErrorCode;
 import com.example.resumeandportfolio.exception.GlobalExceptionHandler;
 import com.example.resumeandportfolio.model.dto.user.UserRegisterRequest;
 import com.example.resumeandportfolio.model.dto.user.UserRegisterResponse;
+import com.example.resumeandportfolio.model.dto.user.UserUpdateRequest;
 import com.example.resumeandportfolio.model.entity.user.User;
 import com.example.resumeandportfolio.model.enums.Role;
 import com.example.resumeandportfolio.service.user.UserService;
@@ -22,8 +23,10 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /**
@@ -172,6 +175,126 @@ public class UserControllerTest {
         mockMvc.perform(post("/api/users/register")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("회원 수정 성공 테스트")
+    void updateUserSuccessTest() throws Exception {
+        // Given
+        UserUpdateRequest request = new UserUpdateRequest(
+            "new_nickname",
+            "current_password",
+            "new_password123"
+        );
+
+        User user = new User(
+            "test@example.com",
+            "encoded_new_password",
+            "new_nickname",
+            Role.VISITOR
+        );
+
+        // Mocking
+        Mockito.when(userService.updateUser(eq(1L), any(UserUpdateRequest.class)))
+            .thenReturn(user);
+
+        // When & Then
+        mockMvc.perform(put("/api/users/update")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request))
+                .sessionAttr("user", new User(
+                    "test@example.com",
+                    "encoded_password",
+                    "old_nickname",
+                    Role.VISITOR
+                ) {
+                    @Override
+                    public Long getUserId() {
+                        return 1L;
+                    }
+                }))
+            .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("회원 수정 실패 테스트 - 로그인되지 않은 사용자")
+    void updateUserFailureUnauthorizedTest() throws Exception {
+        // Given
+        UserUpdateRequest request = new UserUpdateRequest(
+            "new_nickname",
+            "current_password",
+            "new_password123"
+        );
+
+        // When & Then
+        mockMvc.perform(put("/api/users/update")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @DisplayName("회원 수정 실패 테스트 - 비밀번호 불일치")
+    void updateUserFailureInvalidPasswordTest() throws Exception {
+        // Given
+        UserUpdateRequest request = new UserUpdateRequest(
+            "new_nickname",
+            "wrong_password",
+            "new_password123"
+        );
+
+        // Mocking
+        Mockito.when(userService.updateUser(any(Long.class), any(UserUpdateRequest.class)))
+            .thenThrow(new CustomException(ErrorCode.INVALID_PASSWORD));
+
+        // When & Then
+        mockMvc.perform(put("/api/users/update")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request))
+                .sessionAttr("user", new User(
+                    "test@example.com",
+                    "encoded_password",
+                    "old_nickname",
+                    Role.VISITOR
+                ) {
+                    @Override
+                    public Long getUserId() {
+                        return 1L;
+                    }
+                }))
+            .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @DisplayName("회원 수정 실패 테스트 - 닉네임과 비밀번호가 모두 null")
+    void updateUserFailureInvalidRequestTest() throws Exception {
+        // Given
+        UserUpdateRequest request = new UserUpdateRequest(
+            null,
+            "current_password",
+            null
+        );
+
+        // Mocking
+        Mockito.when(userService.updateUser(any(Long.class), any(UserUpdateRequest.class)))
+            .thenThrow(new CustomException(ErrorCode.INVALID_REQUEST));
+
+        // When & Then
+        mockMvc.perform(put("/api/users/update")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request))
+                .sessionAttr("user", new User(
+                    "test@example.com",
+                    "encoded_password",
+                    "old_nickname",
+                    Role.VISITOR
+                ) {
+                    @Override
+                    public Long getUserId() {
+                        return 1L;
+                    }
+                }))
             .andExpect(status().isBadRequest());
     }
 }
