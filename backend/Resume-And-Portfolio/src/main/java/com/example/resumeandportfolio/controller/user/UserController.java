@@ -80,4 +80,19 @@ public class UserController {
 
         return ResponseEntity.ok(response);
     }
+
+    // 회원 탈퇴 API
+    @DeleteMapping("/delete")
+    public ResponseEntity<String> deleteUser(HttpSession session) {
+        UserLoginResponse sessionUser = (UserLoginResponse) session.getAttribute("user");
+
+        if (sessionUser == null) {
+            throw new CustomException(ErrorCode.UNAUTHORIZED);
+        }
+
+        userService.deleteUser(sessionUser.userId());
+
+        session.invalidate();
+        return ResponseEntity.ok("회원 탈퇴가 완료되었습니다.");
+    }
 }

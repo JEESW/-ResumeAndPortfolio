@@ -33,7 +33,7 @@ public class UserService {
     // 로그인 로직
     @Transactional
     public UserLoginResponse login(String email, String rawPassword) {
-        User user = userRepository.findByEmail(email)
+        User user = userRepository.findByEmailAndDeletedAtIsNull(email)
             .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
         // 비밀번호 검증
@@ -62,7 +62,7 @@ public class UserService {
     // 회원 수정 로직
     @Transactional
     public UserUpdateResponse updateUser(Long userId, UserUpdateRequest request) {
-        User user = userRepository.findById(userId)
+        User user = userRepository.findByUserIdAndDeletedAtIsNull(userId)
             .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
         // 닉네임과 새 비밀번호가 모두 null인 경우 예외 처리
@@ -89,5 +89,18 @@ public class UserService {
         User updatedUser = userRepository.save(user);
 
         return UserMapper.toUpdateResponse(updatedUser);
+    }
+
+    // 회원 탈퇴 로직
+    @Transactional
+    public void deleteUser(Long userId) {
+        User user = userRepository.findByUserId(userId)
+            .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        if (user.getDeletedAt() != null) {
+            throw new CustomException(ErrorCode.USER_ALREADY_DELETED);
+        }
+
+        user.delete();
     }
 }
