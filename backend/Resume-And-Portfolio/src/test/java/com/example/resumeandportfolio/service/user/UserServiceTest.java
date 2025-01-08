@@ -67,7 +67,7 @@ public class UserServiceTest {
             }
         };
 
-        when(userRepository.findByEmail("test@example.com"))
+        when(userRepository.findByEmailAndDeletedAtIsNull("test@example.com"))
             .thenReturn(Optional.of(testUserWithId));
         when(passwordEncoder.matches("raw_password", "encoded_password"))
             .thenReturn(true);
@@ -81,7 +81,7 @@ public class UserServiceTest {
         assertEquals("Tester", response.nickname());
 
         // Verify
-        verify(userRepository, times(1)).findByEmail("test@example.com");
+        verify(userRepository, times(1)).findByEmailAndDeletedAtIsNull("test@example.com");
         verify(passwordEncoder, times(1)).matches("raw_password", "encoded_password");
     }
 
@@ -89,7 +89,7 @@ public class UserServiceTest {
     @DisplayName("로그인 실패 테스트 - 사용자 없음")
     void loginFailureUserNotFoundTest() {
         // Given: Repository에서 사용자 반환 없음
-        when(userRepository.findByEmail("notfound@example.com"))
+        when(userRepository.findByEmailAndDeletedAtIsNull("notfound@example.com"))
             .thenReturn(Optional.empty());
 
         // When & Then: 예외 검증
@@ -98,7 +98,7 @@ public class UserServiceTest {
         );
 
         assertEquals(ErrorCode.USER_NOT_FOUND, exception.getErrorCode());
-        verify(userRepository, times(1)).findByEmail("notfound@example.com");
+        verify(userRepository, times(1)).findByEmailAndDeletedAtIsNull("notfound@example.com");
         verifyNoInteractions(passwordEncoder);
     }
 
@@ -106,7 +106,7 @@ public class UserServiceTest {
     @DisplayName("로그인 실패 테스트 - 잘못된 비밀번호")
     void loginFailureInvalidPasswordTest() {
         // Given: Repository 동작 정의 및 잘못된 비밀번호 설정
-        when(userRepository.findByEmail("test@example.com"))
+        when(userRepository.findByEmailAndDeletedAtIsNull("test@example.com"))
             .thenReturn(Optional.of(testUser));
         when(passwordEncoder.matches("wrong_password", "encoded_password"))
             .thenReturn(false);
@@ -117,7 +117,7 @@ public class UserServiceTest {
         );
 
         assertEquals(ErrorCode.INVALID_PASSWORD, exception.getErrorCode());
-        verify(userRepository, times(1)).findByEmail("test@example.com");
+        verify(userRepository, times(1)).findByEmailAndDeletedAtIsNull("test@example.com");
         verify(passwordEncoder, times(1)).matches("wrong_password", "encoded_password");
     }
 
@@ -198,7 +198,7 @@ public class UserServiceTest {
             }
         };
 
-        when(userRepository.findById(1L)).thenReturn(Optional.of(testUserWithId));
+        when(userRepository.findByUserIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(testUserWithId));
         when(passwordEncoder.matches("current_password", "encoded_password")).thenReturn(true);
         when(passwordEncoder.encode("new_password123")).thenReturn("encoded_new_password");
 
@@ -226,7 +226,7 @@ public class UserServiceTest {
         assertEquals(Role.VISITOR, response.role());
 
         // Verify
-        verify(userRepository, times(1)).findById(1L);
+        verify(userRepository, times(1)).findByUserIdAndDeletedAtIsNull(1L);
         verify(passwordEncoder, times(1)).matches("current_password", "encoded_password");
         verify(passwordEncoder, times(1)).encode("new_password123");
         verify(userRepository, times(1)).save(any(User.class));
@@ -254,7 +254,7 @@ public class UserServiceTest {
             }
         };
 
-        when(userRepository.findById(1L)).thenReturn(Optional.of(existingUser));
+        when(userRepository.findByUserIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(existingUser));
         when(passwordEncoder.matches("wrong_password", "encoded_password")).thenReturn(false);
 
         // When & Then: 예외 검증
@@ -265,7 +265,7 @@ public class UserServiceTest {
         assertEquals(ErrorCode.INVALID_PASSWORD, exception.getErrorCode());
 
         // Verify: Mock 메서드 호출 검증
-        verify(userRepository, times(1)).findById(1L);
+        verify(userRepository, times(1)).findByUserIdAndDeletedAtIsNull(1L);
         verify(passwordEncoder, times(1)).matches("wrong_password", "encoded_password");
         verify(userRepository, times(0)).save(any(User.class));
     }
@@ -280,7 +280,7 @@ public class UserServiceTest {
             "new_password123"
         );
 
-        when(userRepository.findById(1L)).thenReturn(Optional.empty());
+        when(userRepository.findByUserIdAndDeletedAtIsNull(1L)).thenReturn(Optional.empty());
 
         // When & Then: 예외 검증
         CustomException exception = assertThrows(CustomException.class, () ->
@@ -290,7 +290,7 @@ public class UserServiceTest {
         assertEquals(ErrorCode.USER_NOT_FOUND, exception.getErrorCode());
 
         // Verify: Mock 메서드 호출 검증
-        verify(userRepository, times(1)).findById(1L);
+        verify(userRepository, times(1)).findByUserIdAndDeletedAtIsNull(1L);
         verifyNoInteractions(passwordEncoder);
         verify(userRepository, times(0)).save(any(User.class));
     }
