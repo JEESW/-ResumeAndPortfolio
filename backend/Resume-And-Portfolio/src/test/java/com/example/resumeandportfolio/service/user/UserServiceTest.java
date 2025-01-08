@@ -22,6 +22,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
@@ -293,5 +294,67 @@ public class UserServiceTest {
         verify(userRepository, times(1)).findByUserIdAndDeletedAtIsNull(1L);
         verifyNoInteractions(passwordEncoder);
         verify(userRepository, times(0)).save(any(User.class));
+    }
+
+    @Test
+    @DisplayName("회원 탈퇴 성공 테스트")
+    void deleteUserSuccessTest() {
+        // Given
+        User existingUser = User.builder()
+            .email("test@example.com")
+            .password("encoded_password")
+            .nickname("Tester")
+            .role(Role.VISITOR)
+            .build();
+
+        when(userRepository.findByUserId(1L))
+            .thenReturn(Optional.of(existingUser));
+
+        // When
+        userService.deleteUser(1L);
+
+        // Then
+        verify(userRepository, times(1)).findByUserId(1L);
+        assertNotNull(existingUser.getDeletedAt());
+    }
+
+    @Test
+    @DisplayName("회원 탈퇴 실패 테스트 - 사용자 없음")
+    void deleteUserFailureUserNotFoundTest() {
+        // Given
+        when(userRepository.findByUserId(1L))
+            .thenReturn(Optional.empty());
+
+        // When & Then
+        CustomException exception = assertThrows(CustomException.class, () ->
+            userService.deleteUser(1L)
+        );
+
+        assertEquals(ErrorCode.USER_NOT_FOUND, exception.getErrorCode());
+        verify(userRepository, times(1)).findByUserId(1L);
+    }
+
+    @Test
+    @DisplayName("회원 탈퇴 실패 테스트 - 이미 탈퇴된 사용자")
+    void deleteUserFailureAlreadyDeletedTest() {
+        // Given
+        User deletedUser = User.builder()
+            .email("deleted@example.com")
+            .password("encoded_password")
+            .nickname("DeletedUser")
+            .role(Role.VISITOR)
+            .build();
+
+        deletedUser.delete();
+        when(userRepository.findByUserId(1L))
+            .thenReturn(Optional.of(deletedUser));
+
+        // When & Then
+        CustomException exception = assertThrows(CustomException.class, () ->
+            userService.deleteUser(1L)
+        );
+
+        assertEquals(ErrorCode.USER_ALREADY_DELETED, exception.getErrorCode());
+        verify(userRepository, times(1)).findByUserId(1L);
     }
 }

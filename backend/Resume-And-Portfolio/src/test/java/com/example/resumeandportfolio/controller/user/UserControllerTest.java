@@ -26,9 +26,11 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.times;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /**
@@ -269,5 +271,69 @@ public class UserControllerTest {
                 .content(objectMapper.writeValueAsString(request))
                 .sessionAttr("user", new UserLoginResponse(1L, "test@example.com", "old_nickname")))
             .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("회원 탈퇴 성공 테스트")
+    void deleteUserSuccessTest() throws Exception {
+        // Given: 세션에 로그인된 사용자 설정
+        UserLoginResponse sessionUser = new UserLoginResponse(1L, "test@example.com", "tester");
+
+        // When & Then: API 호출 및 검증
+        mockMvc.perform(delete("/api/users/delete")
+                .sessionAttr("user", sessionUser))
+            .andExpect(status().isOk());
+
+        // Verify: 서비스의 deleteUser 메서드 호출 검증
+        Mockito.verify(userService, times(1)).deleteUser(1L);
+    }
+
+    @Test
+    @DisplayName("회원 탈퇴 실패 테스트 - 로그인되지 않은 사용자")
+    void deleteUserFailureUnauthorizedTest() throws Exception {
+        // When & Then: API 호출 및 검증
+        mockMvc.perform(delete("/api/users/delete"))
+            .andExpect(status().isUnauthorized());
+
+        // Verify: 서비스 메서드 호출이 없어야 함
+        Mockito.verifyNoInteractions(userService);
+    }
+
+    @Test
+    @DisplayName("회원 탈퇴 실패 테스트 - 사용자 없음")
+    void deleteUserFailureUserNotFoundTest() throws Exception {
+        // Given: 세션에 로그인된 사용자 설정
+        UserLoginResponse sessionUser = new UserLoginResponse(1L, "test@example.com", "tester");
+
+        // Mocking: 서비스에서 USER_NOT_FOUND 예외 발생
+        Mockito.doThrow(new CustomException(ErrorCode.USER_NOT_FOUND))
+            .when(userService).deleteUser(1L);
+
+        // When & Then: API 호출 및 검증
+        mockMvc.perform(delete("/api/users/delete")
+                .sessionAttr("user", sessionUser))
+            .andExpect(status().isNotFound());
+
+        // Verify: 서비스의 deleteUser 메서드 호출 검증
+        Mockito.verify(userService, times(1)).deleteUser(1L);
+    }
+
+    @Test
+    @DisplayName("회원 탈퇴 실패 테스트 - 이미 탈퇴된 사용자")
+    void deleteUserFailureAlreadyDeletedTest() throws Exception {
+        // Given: 세션에 로그인된 사용자 설정
+        UserLoginResponse sessionUser = new UserLoginResponse(1L, "test@example.com", "tester");
+
+        // Mocking: 서비스에서 USER_ALREADY_DELETED 예외 발생
+        Mockito.doThrow(new CustomException(ErrorCode.USER_ALREADY_DELETED))
+            .when(userService).deleteUser(1L);
+
+        // When & Then: API 호출 및 검증
+        mockMvc.perform(delete("/api/users/delete")
+                .sessionAttr("user", sessionUser))
+            .andExpect(status().isBadRequest());
+
+        // Verify: 서비스의 deleteUser 메서드 호출 검증
+        Mockito.verify(userService, times(1)).deleteUser(1L);
     }
 }
