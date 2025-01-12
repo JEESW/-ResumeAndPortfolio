@@ -1,6 +1,9 @@
 package com.example.resumeandportfolio.model.enums;
 
+import java.util.Collections;
+import java.util.List;
 import lombok.Getter;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 /**
  * Role Enum
@@ -18,5 +21,10 @@ public enum Role {
 
     Role(String description) {
         this.description = description;
+    }
+
+    // 권한 리스트 반환
+    public List<SimpleGrantedAuthority> getGrantedAuthorities() {
+        return Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + this.name()));
     }
 }
