@@ -1,5 +1,6 @@
 package com.example.resumeandportfolio.controller.global;
 
+import com.example.resumeandportfolio.service.global.RefreshTokenService;
 import com.example.resumeandportfolio.util.jwt.JwtUtil;
 import io.jsonwebtoken.ExpiredJwtException;
 import jakarta.servlet.http.Cookie;
@@ -23,6 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class ReissueController {
 
     private final JwtUtil jwtUtil;
+    private final RefreshTokenService refreshTokenService;
 
     @PostMapping("/reissue")
     public ResponseEntity<?> reissue(HttpServletRequest request, HttpServletResponse response) {
@@ -59,8 +61,18 @@ public class ReissueController {
         String username = jwtUtil.getUsername(refresh);
         String role = jwtUtil.getRole(refresh);
 
+        // DB에 올바르게 저장되어 있는지 확인
+        String storedToken = refreshTokenService.getRefreshToken(username);
+        if (!refresh.equals(storedToken)) {
+            return new ResponseEntity<>("invalid refresh token", HttpStatus.BAD_REQUEST);
+        }
+
         String newAccess = jwtUtil.createJwt("access", username, role, 600000L);
         String newRefresh = jwtUtil.createJwt("refresh", username, role, 86400000L);
+
+        // DB에 기존의 Refresh 토큰 삭제 후 새 Refresh 토큰 저장
+        refreshTokenService.deleteRefreshToken(username);
+        refreshTokenService.saveRefreshToken(username, newRefresh, 86400000L);
 
         response.setHeader("access", newAccess);
         response.addCookie(createCookie("refresh", newRefresh));

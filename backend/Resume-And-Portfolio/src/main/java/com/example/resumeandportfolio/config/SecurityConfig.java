@@ -2,6 +2,7 @@ package com.example.resumeandportfolio.config;
 
 import com.example.resumeandportfolio.filter.JwtFilter;
 import com.example.resumeandportfolio.filter.LoginFilter;
+import com.example.resumeandportfolio.service.global.RefreshTokenService;
 import com.example.resumeandportfolio.util.jwt.JwtUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.Collections;
@@ -31,6 +32,7 @@ public class SecurityConfig {
 
     private final AuthenticationConfiguration authenticationConfiguration;
     private final JwtUtil jwtUtil;
+    private final RefreshTokenService refreshTokenService;
 
     // 시큐리티 체인
     @Bean
@@ -61,7 +63,7 @@ public class SecurityConfig {
             )
             .addFilterBefore(new JwtFilter(jwtUtil), LoginFilter.class)
             .addFilterAt(
-                new LoginFilter(authenticationManager(authenticationConfiguration), jwtUtil),
+                new LoginFilter(authenticationManager(authenticationConfiguration), jwtUtil, refreshTokenService),
                 UsernamePasswordAuthenticationFilter.class)
             .sessionManagement(session -> session
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS));

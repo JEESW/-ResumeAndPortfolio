@@ -1,6 +1,7 @@
 package com.example.resumeandportfolio.filter;
 
 import com.example.resumeandportfolio.model.entity.user.CustomUserDetails;
+import com.example.resumeandportfolio.service.global.RefreshTokenService;
 import com.example.resumeandportfolio.util.jwt.JwtUtil;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.http.Cookie;
@@ -27,6 +28,7 @@ public class LoginFilter extends UsernamePasswordAuthenticationFilter {
 
     private final AuthenticationManager authenticationManager;
     private final JwtUtil jwtUtil;
+    private final RefreshTokenService refreshTokenService;
 
     @Override
     public Authentication attemptAuthentication(HttpServletRequest request,
@@ -53,6 +55,8 @@ public class LoginFilter extends UsernamePasswordAuthenticationFilter {
             customUserDetails.getAuthorities().iterator().next().getAuthority(), 600000L);
         String refresh = jwtUtil.createJwt("refresh", customUserDetails.getUsername(),
             customUserDetails.getAuthorities().iterator().next().getAuthority(), 86400000L);
+
+        refreshTokenService.saveRefreshToken(customUserDetails.getUsername(), refresh, 86400L);
 
         response.setHeader("access", access);
         response.addCookie(createCookie("refresh", refresh));
