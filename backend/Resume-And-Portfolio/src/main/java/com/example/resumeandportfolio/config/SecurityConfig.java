@@ -1,5 +1,6 @@
 package com.example.resumeandportfolio.config;
 
+import com.example.resumeandportfolio.filter.CustomLogoutFilter;
 import com.example.resumeandportfolio.filter.JwtFilter;
 import com.example.resumeandportfolio.filter.LoginFilter;
 import com.example.resumeandportfolio.service.global.RefreshTokenService;
@@ -16,6 +17,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.authentication.logout.LogoutFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 
@@ -65,6 +67,7 @@ public class SecurityConfig {
             .addFilterAt(
                 new LoginFilter(authenticationManager(authenticationConfiguration), jwtUtil, refreshTokenService),
                 UsernamePasswordAuthenticationFilter.class)
+            .addFilterBefore(new CustomLogoutFilter(jwtUtil, refreshTokenService), LogoutFilter.class)
             .sessionManagement(session -> session
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
