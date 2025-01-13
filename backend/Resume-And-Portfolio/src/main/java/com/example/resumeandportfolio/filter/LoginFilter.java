@@ -47,8 +47,7 @@ public class LoginFilter extends UsernamePasswordAuthenticationFilter {
     //로그인 성공시 실행하는 메소드
     @Override
     protected void successfulAuthentication(HttpServletRequest request,
-        HttpServletResponse response, FilterChain chain, Authentication authentication)
-        throws IOException {
+        HttpServletResponse response, FilterChain chain, Authentication authentication) {
         CustomUserDetails customUserDetails = (CustomUserDetails) authentication.getPrincipal();
         String access = jwtUtil.createJwt("access", customUserDetails.getUsername(),
             customUserDetails.getAuthorities().iterator().next().getAuthority(), 600000L);
