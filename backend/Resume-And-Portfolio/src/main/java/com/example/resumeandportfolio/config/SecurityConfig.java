@@ -37,12 +37,13 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
             .csrf(csrf -> csrf.disable())
-            .cors(cors-> cors.configurationSource(new CorsConfigurationSource() {
+            .cors(cors -> cors.configurationSource(new CorsConfigurationSource() {
                 @Override
                 public CorsConfiguration getCorsConfiguration(HttpServletRequest request) {
                     CorsConfiguration configuration = new CorsConfiguration();
 
-                    configuration.setAllowedOrigins(Collections.singletonList("http://localhost:3000"));
+                    configuration.setAllowedOrigins(
+                        Collections.singletonList("http://localhost:3000"));
                     configuration.setAllowedMethods(Collections.singletonList("*"));
                     configuration.setAllowCredentials(true);
                     configuration.setAllowedHeaders(Collections.singletonList("*"));
@@ -55,11 +56,13 @@ public class SecurityConfig {
             .formLogin(formLogin -> formLogin.disable())
             .httpBasic(httpBasic -> httpBasic.disable())
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/", "/api/users/login", "/api/users/join").permitAll()
+                .requestMatchers("/", "/reissue", "/api/users/login", "/api/users/join").permitAll()
                 .anyRequest().authenticated()
             )
             .addFilterBefore(new JwtFilter(jwtUtil), LoginFilter.class)
-            .addFilterAt(new LoginFilter(authenticationManager(authenticationConfiguration), jwtUtil), UsernamePasswordAuthenticationFilter.class)
+            .addFilterAt(
+                new LoginFilter(authenticationManager(authenticationConfiguration), jwtUtil),
+                UsernamePasswordAuthenticationFilter.class)
             .sessionManagement(session -> session
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
@@ -74,7 +77,8 @@ public class SecurityConfig {
 
     //AuthenticationManager
     @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration)
+        throws Exception {
         return configuration.getAuthenticationManager();
     }
 }

@@ -3,10 +3,12 @@ package com.example.resumeandportfolio.filter;
 import com.example.resumeandportfolio.model.entity.user.CustomUserDetails;
 import com.example.resumeandportfolio.util.jwt.JwtUtil;
 import jakarta.servlet.FilterChain;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -48,14 +50,15 @@ public class LoginFilter extends UsernamePasswordAuthenticationFilter {
         HttpServletResponse response, FilterChain chain, Authentication authentication)
         throws IOException {
         CustomUserDetails customUserDetails = (CustomUserDetails) authentication.getPrincipal();
-        String token = jwtUtil.createJwt(customUserDetails.getUsername(),
-            customUserDetails.getAuthorities().iterator().next().getAuthority(), 60 * 60 * 10L);
+        String access = jwtUtil.createJwt("access", customUserDetails.getUsername(),
+            customUserDetails.getAuthorities().iterator().next().getAuthority(), 600000L);
+        String refresh = jwtUtil.createJwt("refresh", customUserDetails.getUsername(),
+            customUserDetails.getAuthorities().iterator().next().getAuthority(), 86400000L);
 
-        response.setContentType("application/json");
-        response.getWriter().write("{\"token\":\"Bearer " + token + "\"}");
-        response.getWriter().flush();
+        response.setHeader("access", access);
+        response.addCookie(createCookie("refresh", refresh));
+        response.setStatus(HttpStatus.OK.value());
     }
-
 
     //로그인 실패시 실행하는 메소드
     @Override
@@ -65,5 +68,13 @@ public class LoginFilter extends UsernamePasswordAuthenticationFilter {
         response.setStatus(401);
         response.getWriter().write("{\"error\":\"Invalid username or password\"}");
         response.getWriter().flush();
+    }
+
+    private Cookie createCookie(String key, String value) {
+        Cookie cookie = new Cookie(key, value);
+        cookie.setMaxAge(24*60*60);
+        cookie.setHttpOnly(true);
+
+        return cookie;
     }
 }
