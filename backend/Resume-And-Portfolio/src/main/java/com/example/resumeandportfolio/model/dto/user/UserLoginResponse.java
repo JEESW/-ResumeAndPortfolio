@@ -1,5 +1,7 @@
 package com.example.resumeandportfolio.model.dto.user;
 
+import com.example.resumeandportfolio.model.enums.Role;
+
 /**
  * 로그인 응답 DTO
  *
@@ -10,5 +12,6 @@ package com.example.resumeandportfolio.model.dto.user;
 public record UserLoginResponse(
     Long userId,
     String email,
-    String nickname
+    String nickname,
+    Role role
 ) {}

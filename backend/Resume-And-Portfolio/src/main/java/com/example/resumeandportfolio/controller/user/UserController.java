@@ -8,15 +8,19 @@ import com.example.resumeandportfolio.model.dto.user.UserRegisterResponse;
 import com.example.resumeandportfolio.model.dto.user.UserRegisterRequest;
 import com.example.resumeandportfolio.model.dto.user.UserUpdateRequest;
 import com.example.resumeandportfolio.model.dto.user.UserUpdateResponse;
+import com.example.resumeandportfolio.service.global.RefreshTokenService;
 import com.example.resumeandportfolio.service.user.UserService;
-import com.example.resumeandportfolio.util.mapper.UserMapper;
+import com.example.resumeandportfolio.util.jwt.JwtUtil;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
-
-import jakarta.servlet.http.HttpSession;
 
 /**
  * User's Controller
@@ -31,25 +35,29 @@ import jakarta.servlet.http.HttpSession;
 public class UserController {
 
     private final UserService userService;
+    private final JwtUtil jwtUtil;
+    private final RefreshTokenService refreshTokenService;
 
     // 로그인 API
     @PostMapping("/login")
     public ResponseEntity<UserLoginResponse> login(
         @Valid @RequestBody UserLoginRequest request,
-        HttpSession session
+        HttpServletResponse response
     ) {
-        UserLoginResponse response = userService.login(request.email(), request.password());
+        UserLoginResponse loginResponse = userService.login(request.email(), request.password());
 
-        session.setAttribute("user", response);
+        String accessToken = jwtUtil.createJwt("access", loginResponse.email(),
+            loginResponse.role().name(), 600000L);
+        String refreshToken = jwtUtil.createJwt("refresh", loginResponse.email(),
+            loginResponse.role().name(), 86400000L);
 
-        return ResponseEntity.ok(response);
-    }
+        // Redis에 Refresh 토큰 저장
+        refreshTokenService.saveRefreshToken(loginResponse.email(), refreshToken, 86400L);
 
-    // 로그아웃 API
-    @PostMapping("/logout")
-    public ResponseEntity<String> logout(HttpSession session) {
-        session.invalidate(); // 세션 무효화
-        return ResponseEntity.ok("로그아웃 성공");
+        response.setHeader("Authorization", "Bearer " + accessToken);
+        response.addCookie(createCookie("refresh", refreshToken));
+
+        return ResponseEntity.ok(loginResponse);
     }
 
     // 회원 가입 API
@@ -65,34 +73,39 @@ public class UserController {
     @PutMapping("/update")
     public ResponseEntity<UserUpdateResponse> updateUser(
         @Valid @RequestBody UserUpdateRequest request,
-        HttpSession session
+        HttpServletRequest httpServletRequest
     ) {
-        UserLoginResponse sessionUser = (UserLoginResponse) session.getAttribute("user");
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication.getName();
 
-        // 로그인되지 않은 사용자인 경우 401 Unauthorized 반환
-        if (sessionUser == null) {
-            throw new CustomException(ErrorCode.UNAUTHORIZED);
-        }
-
-        UserUpdateResponse response = userService.updateUser(sessionUser.userId(), request);
-
-        session.setAttribute("user", UserMapper.toLoginResponse(response));
-
+        UserUpdateResponse response = userService.updateUser(email, request);
         return ResponseEntity.ok(response);
     }
 
     // 회원 탈퇴 API
     @DeleteMapping("/delete")
-    public ResponseEntity<String> deleteUser(HttpSession session) {
-        UserLoginResponse sessionUser = (UserLoginResponse) session.getAttribute("user");
+    public ResponseEntity<String> deleteUser(HttpServletRequest request) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-        if (sessionUser == null) {
+        // 인증 정보가 없는 경우 처리
+        if (authentication == null || !authentication.isAuthenticated()) {
             throw new CustomException(ErrorCode.UNAUTHORIZED);
         }
 
-        userService.deleteUser(sessionUser.userId());
+        String email = authentication.getName();
 
-        session.invalidate();
+        userService.deleteUser(email);
+        refreshTokenService.deleteRefreshToken(email); // Redis에서 Refresh 토큰 삭제
+
         return ResponseEntity.ok("회원 탈퇴가 완료되었습니다.");
+    }
+
+    // 쿠키 생성 메서드
+    private Cookie createCookie(String key, String value) {
+        Cookie cookie = new Cookie(key, value);
+        cookie.setMaxAge(24 * 60 * 60);
+        cookie.setHttpOnly(true);
+
+        return cookie;
     }
 }

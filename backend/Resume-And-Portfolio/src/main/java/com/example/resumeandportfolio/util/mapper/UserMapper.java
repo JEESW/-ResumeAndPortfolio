@@ -21,7 +21,8 @@ public class UserMapper {
         return new UserLoginResponse(
             user.getUserId(),
             user.getEmail(),
-            user.getNickname()
+            user.getNickname(),
+            user.getRole()
         );
     }
 
@@ -60,7 +61,8 @@ public class UserMapper {
         return new UserLoginResponse(
             response.userId(),
             response.email(),
-            response.nickname()
+            response.nickname(),
+            response.role()
         );
     }
 }

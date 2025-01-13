@@ -61,8 +61,8 @@ public class UserService {
 
     // 회원 수정 로직
     @Transactional
-    public UserUpdateResponse updateUser(Long userId, UserUpdateRequest request) {
-        User user = userRepository.findByUserIdAndDeletedAtIsNull(userId)
+    public UserUpdateResponse updateUser(String email, UserUpdateRequest request) {
+        User user = userRepository.findByEmailAndDeletedAtIsNull(email)
             .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
         // 닉네임과 새 비밀번호가 모두 null인 경우 예외 처리
@@ -93,8 +93,8 @@ public class UserService {
 
     // 회원 탈퇴 로직
     @Transactional
-    public void deleteUser(Long userId) {
-        User user = userRepository.findByUserId(userId)
+    public void deleteUser(String email) {
+        User user = userRepository.findByEmailAndDeletedAtIsNull(email)
             .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
         if (user.getDeletedAt() != null) {
