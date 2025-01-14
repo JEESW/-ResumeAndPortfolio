@@ -126,7 +126,8 @@ public class UserServiceTest {
     @DisplayName("회원가입 성공 테스트")
     void registerSuccessTest() {
         // Given: 회원가입 요청 데이터와 이미 사용하지 않은 이메일
-        UserRegisterRequest request = new UserRegisterRequest("new@example.com", "password123", "NewUser");
+        UserRegisterRequest request = new UserRegisterRequest("new@example.com", "password123",
+            "NewUser");
 
         when(userRepository.existsByEmail("new@example.com"))
             .thenReturn(false);
@@ -159,7 +160,8 @@ public class UserServiceTest {
     @DisplayName("회원가입 실패 테스트 - 이메일 중복")
     void registerFailureEmailAlreadyExistsTest() {
         // Given: 중복된 이메일이 존재하는 경우
-        UserRegisterRequest request = new UserRegisterRequest("duplicate@example.com", "password123", "DuplicateUser");
+        UserRegisterRequest request = new UserRegisterRequest("duplicate@example.com",
+            "password123", "DuplicateUser");
 
         when(userRepository.existsByEmail("duplicate@example.com"))
             .thenReturn(true);
@@ -199,9 +201,14 @@ public class UserServiceTest {
             }
         };
 
-        when(userRepository.findByUserIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(testUserWithId));
-        when(passwordEncoder.matches("current_password", "encoded_password")).thenReturn(true);
-        when(passwordEncoder.encode("new_password123")).thenReturn("encoded_new_password");
+        when(userRepository.findByEmailAndDeletedAtIsNull("test@example.com"))
+            .thenReturn(Optional.of(testUserWithId));
+
+        when(passwordEncoder.matches("current_password", "encoded_password"))
+            .thenReturn(true);
+
+        when(passwordEncoder.encode("new_password123"))
+            .thenReturn("encoded_new_password");
 
         User updatedUser = new User(
             "test@example.com",
@@ -218,16 +225,15 @@ public class UserServiceTest {
         when(userRepository.save(any(User.class))).thenReturn(updatedUser);
 
         // When
-        UserUpdateResponse response = userService.updateUser(1L, request);
+        UserUpdateResponse response = userService.updateUser("test@example.com", request);
 
         // Then
-        assertEquals(1L, response.userId());
         assertEquals("test@example.com", response.email());
         assertEquals("new_nickname", response.nickname());
         assertEquals(Role.VISITOR, response.role());
 
         // Verify
-        verify(userRepository, times(1)).findByUserIdAndDeletedAtIsNull(1L);
+        verify(userRepository, times(1)).findByEmailAndDeletedAtIsNull("test@example.com");
         verify(passwordEncoder, times(1)).matches("current_password", "encoded_password");
         verify(passwordEncoder, times(1)).encode("new_password123");
         verify(userRepository, times(1)).save(any(User.class));
@@ -243,30 +249,26 @@ public class UserServiceTest {
             "new_password123"
         );
 
-        User existingUser = new User(
-            "test@example.com",
-            "encoded_password",
-            "old_nickname",
-            Role.VISITOR
-        ) {
-            @Override
-            public Long getUserId() {
-                return 1L;
-            }
-        };
+        User existingUser = User.builder()
+            .email("test@example.com")
+            .password("encoded_password")
+            .nickname("old_nickname")
+            .role(Role.VISITOR)
+            .build();
 
-        when(userRepository.findByUserIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(existingUser));
+        when(userRepository.findByEmailAndDeletedAtIsNull("test@example.com"))
+            .thenReturn(Optional.of(existingUser));
         when(passwordEncoder.matches("wrong_password", "encoded_password")).thenReturn(false);
 
         // When & Then: 예외 검증
         CustomException exception = assertThrows(CustomException.class, () ->
-            userService.updateUser(1L, request)
+            userService.updateUser("test@example.com", request)
         );
 
         assertEquals(ErrorCode.INVALID_PASSWORD, exception.getErrorCode());
 
         // Verify: Mock 메서드 호출 검증
-        verify(userRepository, times(1)).findByUserIdAndDeletedAtIsNull(1L);
+        verify(userRepository, times(1)).findByEmailAndDeletedAtIsNull("test@example.com");
         verify(passwordEncoder, times(1)).matches("wrong_password", "encoded_password");
         verify(userRepository, times(0)).save(any(User.class));
     }
@@ -281,17 +283,18 @@ public class UserServiceTest {
             "new_password123"
         );
 
-        when(userRepository.findByUserIdAndDeletedAtIsNull(1L)).thenReturn(Optional.empty());
+        when(userRepository.findByEmailAndDeletedAtIsNull("notfound@example.com"))
+            .thenReturn(Optional.empty());
 
         // When & Then: 예외 검증
         CustomException exception = assertThrows(CustomException.class, () ->
-            userService.updateUser(1L, request)
+            userService.updateUser("notfound@example.com", request)
         );
 
         assertEquals(ErrorCode.USER_NOT_FOUND, exception.getErrorCode());
 
         // Verify: Mock 메서드 호출 검증
-        verify(userRepository, times(1)).findByUserIdAndDeletedAtIsNull(1L);
+        verify(userRepository, times(1)).findByEmailAndDeletedAtIsNull("notfound@example.com");
         verifyNoInteractions(passwordEncoder);
         verify(userRepository, times(0)).save(any(User.class));
     }
@@ -299,7 +302,7 @@ public class UserServiceTest {
     @Test
     @DisplayName("회원 탈퇴 성공 테스트")
     void deleteUserSuccessTest() {
-        // Given
+        // Given: 기존 사용자를 설정하고 Mock 동작 정의
         User existingUser = User.builder()
             .email("test@example.com")
             .password("encoded_password")
@@ -307,31 +310,31 @@ public class UserServiceTest {
             .role(Role.VISITOR)
             .build();
 
-        when(userRepository.findByUserId(1L))
+        when(userRepository.findByEmailAndDeletedAtIsNull("test@example.com"))
             .thenReturn(Optional.of(existingUser));
 
-        // When
-        userService.deleteUser(1L);
+        // When: 회원 탈퇴 서비스 호출
+        userService.deleteUser("test@example.com");
 
-        // Then
-        verify(userRepository, times(1)).findByUserId(1L);
-        assertNotNull(existingUser.getDeletedAt());
+        // Then: 회원 탈퇴가 정상적으로 처리되었는지 검증
+        verify(userRepository, times(1)).findByEmailAndDeletedAtIsNull("test@example.com");
+        assertNotNull(existingUser.getDeletedAt(), "DeletedAt 필드가 null이 아니어야 합니다.");
     }
 
     @Test
     @DisplayName("회원 탈퇴 실패 테스트 - 사용자 없음")
     void deleteUserFailureUserNotFoundTest() {
         // Given
-        when(userRepository.findByUserId(1L))
+        when(userRepository.findByEmailAndDeletedAtIsNull("notfound@example.com"))
             .thenReturn(Optional.empty());
 
         // When & Then
         CustomException exception = assertThrows(CustomException.class, () ->
-            userService.deleteUser(1L)
+            userService.deleteUser("notfound@example.com")
         );
 
         assertEquals(ErrorCode.USER_NOT_FOUND, exception.getErrorCode());
-        verify(userRepository, times(1)).findByUserId(1L);
+        verify(userRepository, times(1)).findByEmailAndDeletedAtIsNull("notfound@example.com");
     }
 
     @Test
@@ -346,15 +349,15 @@ public class UserServiceTest {
             .build();
 
         deletedUser.delete();
-        when(userRepository.findByUserId(1L))
+        when(userRepository.findByEmailAndDeletedAtIsNull("deleted@example.com"))
             .thenReturn(Optional.of(deletedUser));
 
         // When & Then
         CustomException exception = assertThrows(CustomException.class, () ->
-            userService.deleteUser(1L)
+            userService.deleteUser("deleted@example.com")
         );
 
         assertEquals(ErrorCode.USER_ALREADY_DELETED, exception.getErrorCode());
-        verify(userRepository, times(1)).findByUserId(1L);
+        verify(userRepository, times(1)).findByEmailAndDeletedAtIsNull("deleted@example.com");
     }
 }

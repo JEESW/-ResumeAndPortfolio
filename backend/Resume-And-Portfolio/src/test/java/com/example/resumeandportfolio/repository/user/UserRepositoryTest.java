@@ -27,39 +27,6 @@ public class UserRepositoryTest {
     private UserRepository userRepository;
 
     @Test
-    @DisplayName("User ID로 사용자 찾기 - 성공")
-    void findByUserIdSuccess() {
-        // Given: 테스트 데이터 삽입
-        User user = User.builder()
-            .email("test@example.com")
-            .password("encoded_password")
-            .nickname("Tester")
-            .role(Role.VISITOR)
-            .build();
-        User savedUser = userRepository.save(user);
-
-        // When: User ID로 사용자 조회
-        Optional<User> result = userRepository.findByUserId(savedUser.getUserId());
-
-        // Then: 결과 검증
-        assertThat(result).isPresent();
-        assertThat(result.get().getUserId()).isEqualTo(savedUser.getUserId());
-        assertThat(result.get().getEmail()).isEqualTo("test@example.com");
-        assertThat(result.get().getNickname()).isEqualTo("Tester");
-        assertThat(result.get().getRole()).isEqualTo(Role.VISITOR);
-    }
-
-    @Test
-    @DisplayName("User ID로 사용자 찾기 - 실패")
-    void findByUserIdFailure() {
-        // When: 존재하지 않는 User ID로 사용자 조회
-        Optional<User> result = userRepository.findByUserId(999L);
-
-        // Then: 결과 검증
-        assertThat(result).isNotPresent();
-    }
-
-    @Test
     @DisplayName("이메일로 사용자 찾기 - 성공")
     void findByEmailSuccess() {
         // Given: 테스트 데이터 삽입
@@ -156,46 +123,6 @@ public class UserRepositoryTest {
 
         // When: 활성 사용자 조회
         Optional<User> result = userRepository.findByEmailAndDeletedAtIsNull("deleted@example.com");
-
-        // Then: 결과 검증
-        assertThat(result).isNotPresent();
-    }
-
-    @Test
-    @DisplayName("ID로 활성 사용자 찾기 - 성공")
-    void findByIdAndDeletedAtIsNullSuccess() {
-        // Given: 테스트 데이터 삽입
-        User user = User.builder()
-            .email("test@example.com")
-            .password("encoded_password")
-            .nickname("Tester")
-            .role(Role.VISITOR)
-            .build();
-        User savedUser = userRepository.save(user);
-
-        // When: ID로 활성 사용자 조회
-        Optional<User> result = userRepository.findByUserIdAndDeletedAtIsNull(savedUser.getUserId());
-
-        // Then: 결과 검증
-        assertThat(result).isPresent();
-        assertThat(result.get().getUserId()).isEqualTo(savedUser.getUserId());
-    }
-
-    @Test
-    @DisplayName("ID로 활성 사용자 찾기 - 실패 (삭제된 사용자)")
-    void findByIdAndDeletedAtIsNullFailure() {
-        // Given: 삭제된 사용자 삽입
-        User user = User.builder()
-            .email("deleted@example.com")
-            .password("encoded_password")
-            .nickname("DeletedUser")
-            .role(Role.VISITOR)
-            .build();
-        user.delete();
-        User savedUser = userRepository.save(user);
-
-        // When: ID로 활성 사용자 조회
-        Optional<User> result = userRepository.findByUserIdAndDeletedAtIsNull(savedUser.getUserId());
 
         // Then: 결과 검증
         assertThat(result).isNotPresent();
