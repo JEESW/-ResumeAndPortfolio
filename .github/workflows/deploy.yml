@@ -61,6 +61,9 @@ jobs:
           aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin 905418468164.dkr.ecr.ap-northeast-2.amazonaws.com
           cd ~/app
 
+          # Docker 리소스 정리
+          docker system prune -af
+
           # 기존 컨테이너 중지 및 모든 이미지 제거
           docker-compose down
           docker image prune -af
@@ -78,6 +81,7 @@ jobs:
           echo "SPRING_REDIS_HOST=${{ secrets.SPRING_REDIS_HOST }}" >> .env
           echo "SPRING_REDIS_PORT=${{ secrets.SPRING_REDIS_PORT }}" >> .env
           echo "SPRING_REDIS_PASSWORD=${{ secrets.SPRING_REDIS_PASSWORD }}" >> .env
+          echo "SPRING_JWT_SECRET_KEY=${{ secrets.SPRING_JWT_SECRET_KEY }}" >> .env
 
           # 컨테이너 재시작
           docker-compose up -d
