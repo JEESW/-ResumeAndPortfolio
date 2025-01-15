@@ -397,4 +397,90 @@ public class UserControllerTest {
 
         verify(userService, times(1)).deleteUser(anyString());
     }
+
+    @Test
+    @DisplayName("비밀번호 재설정 요청 성공 테스트")
+    void requestPasswordResetSuccessTest() throws Exception {
+        // Given
+        PasswordResetRequestDto request = new PasswordResetRequestDto("test@example.com");
+
+        // When & Then
+        mockMvc.perform(post("/api/users/reset-password/request")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isOk())
+            .andExpect(content().string("비밀번호 재설정 이메일이 발송되었습니다."));
+
+        verify(userService, times(1)).requestPasswordReset(request);
+    }
+
+    @Test
+    @DisplayName("비밀번호 재설정 요청 실패 테스트 - 사용자 없음")
+    void requestPasswordResetFailureUserNotFoundTest() throws Exception {
+        // Given
+        PasswordResetRequestDto request = new PasswordResetRequestDto("notfound@example.com");
+
+        doThrow(new CustomException(ErrorCode.USER_NOT_FOUND))
+            .when(userService).requestPasswordReset(any(PasswordResetRequestDto.class));
+
+        // When & Then
+        mockMvc.perform(post("/api/users/reset-password/request")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isNotFound());
+
+        verify(userService, times(1)).requestPasswordReset(request);
+    }
+
+    @Test
+    @DisplayName("비밀번호 재설정 확인 성공 테스트")
+    void confirmPasswordResetSuccessTest() throws Exception {
+        // Given
+        PasswordResetConfirmDto request = new PasswordResetConfirmDto("validToken", "new_password123");
+
+        // When & Then
+        mockMvc.perform(post("/api/users/reset-password/confirm")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isOk())
+            .andExpect(content().string("비밀번호가 성공적으로 변경되었습니다."));
+
+        verify(userService, times(1)).confirmPasswordReset(request);
+    }
+
+    @Test
+    @DisplayName("비밀번호 재설정 확인 실패 테스트 - 토큰 만료")
+    void confirmPasswordResetFailureTokenExpiredTest() throws Exception {
+        // Given
+        PasswordResetConfirmDto request = new PasswordResetConfirmDto("expiredToken", "new_password123");
+
+        doThrow(new CustomException(ErrorCode.TOKEN_EXPIRED))
+            .when(userService).confirmPasswordReset(any(PasswordResetConfirmDto.class));
+
+        // When & Then
+        mockMvc.perform(post("/api/users/reset-password/confirm")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isGone());
+
+        verify(userService, times(1)).confirmPasswordReset(request);
+    }
+
+    @Test
+    @DisplayName("비밀번호 재설정 확인 실패 테스트 - 잘못된 토큰")
+    void confirmPasswordResetFailureInvalidTokenTest() throws Exception {
+        // Given
+        PasswordResetConfirmDto request = new PasswordResetConfirmDto("invalidToken", "new_password123");
+
+        doThrow(new CustomException(ErrorCode.INVALID_TOKEN))
+            .when(userService).confirmPasswordReset(any(PasswordResetConfirmDto.class));
+
+        // When & Then
+        mockMvc.perform(post("/api/users/reset-password/confirm")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isBadRequest());
+
+        verify(userService, times(1)).confirmPasswordReset(request);
+    }
 }

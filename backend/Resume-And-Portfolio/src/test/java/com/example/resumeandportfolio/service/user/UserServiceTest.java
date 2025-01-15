@@ -2,6 +2,8 @@ package com.example.resumeandportfolio.service.user;
 
 import com.example.resumeandportfolio.exception.CustomException;
 import com.example.resumeandportfolio.exception.ErrorCode;
+import com.example.resumeandportfolio.model.dto.user.PasswordResetConfirmDto;
+import com.example.resumeandportfolio.model.dto.user.PasswordResetRequestDto;
 import com.example.resumeandportfolio.model.dto.user.UserLoginResponse;
 import com.example.resumeandportfolio.model.dto.user.UserRegisterRequest;
 import com.example.resumeandportfolio.model.dto.user.UserRegisterResponse;
@@ -473,5 +475,105 @@ public class UserServiceTest {
 
         assertEquals(ErrorCode.USER_ALREADY_DELETED, exception.getErrorCode());
         verify(userRepository, times(1)).findByEmailAndDeletedAtIsNull("deleted@example.com");
+    }
+
+    @Test
+    @DisplayName("비밀번호 재설정 요청 성공 테스트")
+    void requestPasswordResetSuccessTest() throws Exception {
+        // Given
+        PasswordResetRequestDto request = new PasswordResetRequestDto("test@example.com");
+        when(userRepository.findByEmailAndDeletedAtIsNull(request.email()))
+            .thenReturn(Optional.of(testUser));
+
+        // When
+        userService.requestPasswordReset(request);
+
+        // Then
+        verify(userRepository, times(1)).findByEmailAndDeletedAtIsNull(request.email());
+        verify(valueOperations, times(1))
+            .set(startsWith("password-reset:token:"), anyString(), eq(Duration.ofHours(24)));
+        verify(mailUtil, times(1)).sendPasswordResetMail(eq(request.email()), anyString());
+    }
+
+    @Test
+    @DisplayName("비밀번호 재설정 요청 실패 테스트 - 사용자 없음")
+    void requestPasswordResetFailureUserNotFoundTest() {
+        // Given
+        PasswordResetRequestDto request = new PasswordResetRequestDto("notfound@example.com");
+        when(userRepository.findByEmailAndDeletedAtIsNull(request.email()))
+            .thenReturn(Optional.empty());
+
+        // When & Then
+        CustomException exception = assertThrows(CustomException.class, () ->
+            userService.requestPasswordReset(request)
+        );
+        assertEquals(ErrorCode.USER_NOT_FOUND, exception.getErrorCode());
+        verify(userRepository, times(1)).findByEmailAndDeletedAtIsNull(request.email());
+        verifyNoInteractions(mailUtil);
+    }
+
+    @Test
+    @DisplayName("비밀번호 재설정 확인 성공 테스트")
+    void confirmPasswordResetSuccessTest() throws Exception {
+        // Given
+        String token = "validToken";
+        PasswordResetConfirmDto request = new PasswordResetConfirmDto(token, "new_password123");
+        VerificationTokenDto tokenDto = new VerificationTokenDto(
+            token, "reset@example.com", LocalDateTime.now().plusHours(1)
+        );
+        String tokenData = objectMapper.writeValueAsString(tokenDto);
+
+        when(valueOperations.get("password-reset:token:" + token)).thenReturn(tokenData);
+        when(objectMapper.readValue(tokenData, VerificationTokenDto.class)).thenReturn(tokenDto);
+        when(userRepository.findByEmailAndDeletedAtIsNull(tokenDto.email()))
+            .thenReturn(Optional.of(testUser));
+
+        // When
+        userService.confirmPasswordReset(request);
+
+        // Then
+        verify(valueOperations, times(1)).get("password-reset:token:" + token);
+        verify(userRepository, times(1)).findByEmailAndDeletedAtIsNull(tokenDto.email());
+        verify(passwordEncoder, times(1)).encode(request.newPassword());
+        verify(redisTemplate, times(1)).delete("password-reset:token:" + token);
+    }
+
+    @Test
+    @DisplayName("비밀번호 재설정 확인 실패 테스트 - 유효하지 않은 토큰")
+    void confirmPasswordResetFailureInvalidTokenTest() {
+        // Given
+        String token = "invalidToken";
+        PasswordResetConfirmDto request = new PasswordResetConfirmDto(token, "new_password123");
+        when(valueOperations.get("password-reset:token:" + token)).thenReturn(null);
+
+        // When & Then
+        CustomException exception = assertThrows(CustomException.class, () ->
+            userService.confirmPasswordReset(request)
+        );
+        assertEquals(ErrorCode.INVALID_TOKEN, exception.getErrorCode());
+        verify(valueOperations, times(1)).get("password-reset:token:" + token);
+        verifyNoInteractions(userRepository);
+    }
+
+    @Test
+    @DisplayName("비밀번호 재설정 확인 실패 테스트 - 토큰 만료")
+    void confirmPasswordResetFailureTokenExpiredTest() throws Exception {
+        // Given
+        String token = "expiredToken";
+        PasswordResetConfirmDto request = new PasswordResetConfirmDto(token, "new_password123");
+        VerificationTokenDto tokenDto = new VerificationTokenDto(
+            token, "reset@example.com", LocalDateTime.now().minusHours(1)
+        );
+        String tokenData = objectMapper.writeValueAsString(tokenDto);
+
+        when(valueOperations.get("password-reset:token:" + token)).thenReturn(tokenData);
+        when(objectMapper.readValue(tokenData, VerificationTokenDto.class)).thenReturn(tokenDto);
+
+        // When & Then
+        CustomException exception = assertThrows(CustomException.class, () ->
+            userService.confirmPasswordReset(request)
+        );
+        assertEquals(ErrorCode.TOKEN_EXPIRED, exception.getErrorCode());
+        verify(valueOperations, times(1)).get("password-reset:token:" + token);
     }
 }
