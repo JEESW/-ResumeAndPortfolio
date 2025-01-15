@@ -2,6 +2,8 @@ package com.example.resumeandportfolio.service.user;
 
 import com.example.resumeandportfolio.exception.CustomException;
 import com.example.resumeandportfolio.exception.ErrorCode;
+import com.example.resumeandportfolio.model.dto.user.PasswordResetConfirmDto;
+import com.example.resumeandportfolio.model.dto.user.PasswordResetRequestDto;
 import com.example.resumeandportfolio.model.dto.user.UserLoginResponse;
 import com.example.resumeandportfolio.model.dto.user.UserRegisterRequest;
 import com.example.resumeandportfolio.model.dto.user.UserRegisterResponse;
@@ -82,7 +84,9 @@ public class UserService {
 
         try {
             ValueOperations<String, String> valueOps = redisTemplate.opsForValue();
-            valueOps.set("verification:token:" + token, objectMapper.writeValueAsString(verificationToken), Duration.ofHours(expirationHours));
+            valueOps.set("verification:token:" + token,
+                objectMapper.writeValueAsString(verificationToken),
+                Duration.ofHours(expirationHours));
         } catch (Exception e) {
             throw new CustomException(ErrorCode.REDIS_SAVE_ERROR);
         }
@@ -105,7 +109,9 @@ public class UserService {
 
         try {
             ValueOperations<String, String> valueOps = redisTemplate.opsForValue();
-            valueOps.set("verification:token:" + token, objectMapper.writeValueAsString(verificationToken), Duration.ofHours(expirationHours));
+            valueOps.set("verification:token:" + token,
+                objectMapper.writeValueAsString(verificationToken),
+                Duration.ofHours(expirationHours));
         } catch (Exception e) {
             throw new CustomException(ErrorCode.REDIS_SAVE_ERROR);
         }
@@ -115,7 +121,8 @@ public class UserService {
 
     // 회원 가입 완료 로직
     @Transactional
-    public UserRegisterResponse completeRegistration(String token, String password, String nickname) {
+    public UserRegisterResponse completeRegistration(String token, String password,
+        String nickname) {
         ValueOperations<String, String> valueOps = redisTemplate.opsForValue();
         String tokenData = valueOps.get("verification:token:" + token);
 
@@ -124,7 +131,8 @@ public class UserService {
         }
 
         try {
-            VerificationTokenDto verificationToken = objectMapper.readValue(tokenData, VerificationTokenDto.class);
+            VerificationTokenDto verificationToken = objectMapper.readValue(tokenData,
+                VerificationTokenDto.class);
             if (verificationToken.isExpired()) {
                 throw new CustomException(ErrorCode.TOKEN_EXPIRED);
             }
@@ -158,7 +166,8 @@ public class UserService {
         }
 
         // 현재 비밀번호 검증
-        if (request.currentPassword() != null && !passwordEncoder.matches(request.currentPassword(), user.getPassword())) {
+        if (request.currentPassword() != null && !passwordEncoder.matches(request.currentPassword(),
+            user.getPassword())) {
             throw new CustomException(ErrorCode.INVALID_PASSWORD);
         }
 
@@ -189,5 +198,57 @@ public class UserService {
         }
 
         user.delete();
+    }
+
+    // 비밀번호 재설정 요청 로직
+    @Transactional
+    public void requestPasswordReset(PasswordResetRequestDto request) {
+        User user = userRepository.findByEmailAndDeletedAtIsNull(request.email())
+            .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        String token = UUID.randomUUID().toString();
+        VerificationTokenDto verificationToken = new VerificationTokenDto(
+            token, user.getEmail(), LocalDateTime.now().plusHours(expirationHours)
+        );
+
+        try {
+            ValueOperations<String, String> valueOps = redisTemplate.opsForValue();
+            valueOps.set("password-reset:token:" + token,
+                objectMapper.writeValueAsString(verificationToken),
+                Duration.ofHours(expirationHours));
+        } catch (Exception e) {
+            throw new CustomException(ErrorCode.REDIS_SAVE_ERROR);
+        }
+
+        mailUtil.sendPasswordResetMail(user.getEmail(), token);
+    }
+
+    // 비밀번호 재설정 확인 로직
+    @Transactional
+    public void confirmPasswordReset(PasswordResetConfirmDto request) {
+        ValueOperations<String, String> valueOps = redisTemplate.opsForValue();
+        String redisKey = "password-reset:token:" + request.token();
+        String tokenData = valueOps.get(redisKey);
+
+        if (tokenData == null) {
+            throw new CustomException(ErrorCode.INVALID_TOKEN);
+        }
+
+        try {
+            VerificationTokenDto verificationToken = objectMapper.readValue(tokenData,
+                VerificationTokenDto.class);
+            if (verificationToken.isExpired()) {
+                throw new CustomException(ErrorCode.TOKEN_EXPIRED);
+            }
+
+            User user = userRepository.findByEmailAndDeletedAtIsNull(verificationToken.email())
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+            String encodedPassword = passwordEncoder.encode(request.newPassword());
+            user.updatePassword(encodedPassword);
+        } catch (JsonProcessingException e) {
+            throw new CustomException(ErrorCode.REDIS_PARSE_ERROR);
+        } finally {
+            redisTemplate.delete(redisKey);
+        }
     }
 }

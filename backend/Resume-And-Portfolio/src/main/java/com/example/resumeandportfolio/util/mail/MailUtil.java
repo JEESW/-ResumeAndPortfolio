@@ -43,4 +43,19 @@ public class MailUtil {
 
         mailSender.send(message);
     }
+
+    // 비밀번호 재설정 시 인증 메일 보내는 메서드
+    public void sendPasswordResetMail(String toEmail, String token) {
+        String subject = "[ResumeAndPortfolio] 비밀번호 재설정";
+        String resetLink = serverUrl + "/api/users/reset-password?token=" + token;
+        String text = "비밀번호 재설정을 요청하셨습니다. 아래 링크를 클릭하여 새로운 비밀번호를 설정하세요:\n" + resetLink;
+
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom(fromAddress);
+        message.setTo(toEmail);
+        message.setSubject(subject);
+        message.setText(text);
+
+        mailSender.send(message);
+    }
 }

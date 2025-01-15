@@ -2,6 +2,8 @@ package com.example.resumeandportfolio.controller.user;
 
 import com.example.resumeandportfolio.exception.CustomException;
 import com.example.resumeandportfolio.exception.ErrorCode;
+import com.example.resumeandportfolio.model.dto.user.PasswordResetConfirmDto;
+import com.example.resumeandportfolio.model.dto.user.PasswordResetRequestDto;
 import com.example.resumeandportfolio.model.dto.user.UserLoginRequest;
 import com.example.resumeandportfolio.model.dto.user.UserLoginResponse;
 import com.example.resumeandportfolio.model.dto.user.UserRegisterResponse;
@@ -120,6 +122,28 @@ public class UserController {
         refreshTokenService.deleteRefreshToken(email); // Redis에서 Refresh 토큰 삭제
 
         return ResponseEntity.ok("회원 탈퇴가 완료되었습니다.");
+    }
+
+    // 비밀번호 재설정 요청 API
+    @PostMapping("/reset-password/request")
+    public ResponseEntity<String> requestPasswordReset(
+        @Valid @RequestBody PasswordResetRequestDto request
+    ) {
+        userService.requestPasswordReset(request);
+        return ResponseEntity.ok()
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("비밀번호 재설정 이메일이 발송되었습니다.");
+    }
+
+    // 비밀번호 재설정 확인 API
+    @PostMapping("/reset-password/confirm")
+    public ResponseEntity<String> confirmPasswordReset(
+        @Valid @RequestBody PasswordResetConfirmDto request
+    ) {
+        userService.confirmPasswordReset(request);
+        return ResponseEntity.ok()
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("비밀번호가 성공적으로 변경되었습니다.");
     }
 
     // 쿠키 생성 메서드
