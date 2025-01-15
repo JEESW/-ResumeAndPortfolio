@@ -127,59 +127,143 @@ public class UserControllerTest {
     }
 
     @Test
-    @DisplayName("회원가입 성공 테스트")
-    void registerSuccessTest() throws Exception {
+    @DisplayName("회원가입 이메일 인증 요청 성공 테스트")
+    void initiateRegistrationSuccessTest() throws Exception {
         // Given
-        UserRegisterRequest request = new UserRegisterRequest("test@example.com", "password123",
-            "tester");
-        UserRegisterResponse response = new UserRegisterResponse(1L, "test@example.com", "tester",
-            Role.valueOf("VISITOR"));
-
-        when(userService.register(any(UserRegisterRequest.class))).thenReturn(response);
+        UserRegisterRequest request = new UserRegisterRequest(
+            "newuser@example.com",
+            "password123",
+            "password123",
+            "new_user"
+        );
 
         // When & Then
-        mockMvc.perform(post("/api/users/register")
+        mockMvc.perform(post("/api/users/register/initiate")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
-            .andExpect(status().isCreated());
+            .andExpect(status().isCreated())
+            .andExpect(content().string("인증 이메일이 발송되었습니다."));
+
+        verify(userService, times(1)).initiateRegistration(request);
     }
 
     @Test
-    @DisplayName("회원가입 실패 테스트 - 이메일 중복")
-    void registerFailureEmailAlreadyExistsTest() throws Exception {
+    @DisplayName("회원가입 이메일 인증 요청 실패 테스트 - 이메일 중복")
+    void initiateRegistrationFailureEmailExistsTest() throws Exception {
         // Given
         UserRegisterRequest request = new UserRegisterRequest(
             "duplicate@example.com",
             "password123",
-            "nickname"
+            "password123",
+            "duplicate_user"
         );
 
-        // Mocking
-        when(userService.register(any(UserRegisterRequest.class)))
-            .thenThrow(new CustomException(ErrorCode.EMAIL_ALREADY_EXISTS));
+        doThrow(new CustomException(ErrorCode.EMAIL_ALREADY_EXISTS))
+            .when(userService).initiateRegistration(any(UserRegisterRequest.class));
 
         // When & Then
-        mockMvc.perform(post("/api/users/register")
+        mockMvc.perform(post("/api/users/register/initiate")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isConflict());
     }
 
     @Test
-    @DisplayName("회원가입 실패 테스트 - 유효하지 않은 요청 데이터")
-    void registerFailureInvalidRequestTest() throws Exception {
-        // Given: 잘못된 요청 데이터 (비밀번호 길이 부족)
-        UserRegisterRequest request = new UserRegisterRequest(
-            "invalid@example.com",
-            "short",
-            "nickname"
+    @DisplayName("회원가입 완료 성공 테스트")
+    void completeRegistrationSuccessTest() throws Exception {
+        // Given
+        String token = "validToken";
+        String password = "password123";
+        String nickname = "new_user";
+
+        UserRegisterResponse response = new UserRegisterResponse(
+            1L,
+            "newuser@example.com",
+            "new_user",
+            Role.VISITOR
         );
 
+        when(userService.completeRegistration(token, password, nickname)).thenReturn(response);
+
         // When & Then
-        mockMvc.perform(post("/api/users/register")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
+        mockMvc.perform(post("/api/users/register/complete")
+                .param("token", token)
+                .param("password", password)
+                .param("nickname", nickname))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.email").value("newuser@example.com"))
+            .andExpect(jsonPath("$.nickname").value("new_user"))
+            .andExpect(jsonPath("$.role").value("VISITOR"));
+
+        verify(userService, times(1)).completeRegistration(token, password, nickname);
+    }
+
+    @Test
+    @DisplayName("회원가입 완료 실패 테스트 - 토큰 만료")
+    void completeRegistrationFailureTokenExpiredTest() throws Exception {
+        // Given
+        String token = "expiredToken";
+        String password = "password123";
+        String nickname = "new_user";
+
+        doThrow(new CustomException(ErrorCode.TOKEN_EXPIRED))
+            .when(userService).completeRegistration(token, password, nickname);
+
+        // When & Then
+        mockMvc.perform(post("/api/users/register/complete")
+                .param("token", token)
+                .param("password", password)
+                .param("nickname", nickname))
+            .andExpect(status().isGone());
+    }
+
+    @Test
+    @DisplayName("회원가입 완료 실패 테스트 - 잘못된 토큰")
+    void completeRegistrationFailureInvalidTokenTest() throws Exception {
+        // Given
+        String token = "invalidToken";
+        String password = "password123";
+        String nickname = "new_user";
+
+        doThrow(new CustomException(ErrorCode.INVALID_TOKEN))
+            .when(userService).completeRegistration(token, password, nickname);
+
+        // When & Then
+        mockMvc.perform(post("/api/users/register/complete")
+                .param("token", token)
+                .param("password", password)
+                .param("nickname", nickname))
             .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("인증 이메일 재전송 성공 테스트")
+    void resendVerificationEmailSuccessTest() throws Exception {
+        // Given
+        String email = "test@example.com";
+
+        // When & Then
+        mockMvc.perform(post("/api/users/register/resend")
+                .param("email", email))
+            .andExpect(status().isOk())
+            .andExpect(content().string("새로운 인증 이메일이 발송되었습니다."));
+
+        verify(userService, times(1)).resendVerificationEmail(email);
+    }
+
+    @Test
+    @DisplayName("인증 이메일 재전송 실패 테스트 - 사용자 없음")
+    void resendVerificationEmailFailureUserNotFoundTest() throws Exception {
+        // Given
+        String email = "notfound@example.com";
+
+        doThrow(new CustomException(ErrorCode.USER_NOT_FOUND))
+            .when(userService).resendVerificationEmail(email);
+
+        // When & Then
+        mockMvc.perform(post("/api/users/register/resend")
+                .param("email", email))
+            .andExpect(status().isNotFound());
     }
 
     @Test

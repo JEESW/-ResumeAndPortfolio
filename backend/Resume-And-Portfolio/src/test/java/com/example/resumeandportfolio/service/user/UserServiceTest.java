@@ -7,9 +7,14 @@ import com.example.resumeandportfolio.model.dto.user.UserRegisterRequest;
 import com.example.resumeandportfolio.model.dto.user.UserRegisterResponse;
 import com.example.resumeandportfolio.model.dto.user.UserUpdateRequest;
 import com.example.resumeandportfolio.model.dto.user.UserUpdateResponse;
+import com.example.resumeandportfolio.model.dto.user.VerificationTokenDto;
 import com.example.resumeandportfolio.model.entity.user.User;
 import com.example.resumeandportfolio.model.enums.Role;
 import com.example.resumeandportfolio.repository.user.UserRepository;
+import com.example.resumeandportfolio.util.mail.MailUtil;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.time.Duration;
+import java.time.LocalDateTime;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -17,9 +22,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.Optional;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -42,14 +50,37 @@ public class UserServiceTest {
     @Mock
     private PasswordEncoder passwordEncoder;
 
+    @Mock
+    private StringRedisTemplate redisTemplate;
+
+    @Mock
+    private MailUtil mailUtil;
+
+    @Mock
+    private ObjectMapper objectMapper;
+
+    @Mock
+    private ValueOperations<String, String> valueOperations;
+
     @InjectMocks
     private UserService userService;
 
     private User testUser;
 
     @BeforeEach
-    void setUp() {
-        testUser = new User("test@example.com", "encoded_password", "Tester", null);
+    void setUp() throws Exception {
+        testUser = User.builder()
+            .email("test@example.com")
+            .password("encoded_password")
+            .nickname("Tester")
+            .role(Role.VISITOR)
+            .build();
+
+        lenient().when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+        lenient().when(objectMapper.writeValueAsString(any(VerificationTokenDto.class))).thenReturn("mockedTokenData");
+        lenient().when(valueOperations.get(anyString())).thenReturn("mockedTokenData");
+
+        ReflectionTestUtils.setField(userService, "expirationHours", 24);
     }
 
     @Test
@@ -123,60 +154,143 @@ public class UserServiceTest {
     }
 
     @Test
-    @DisplayName("회원가입 성공 테스트")
-    void registerSuccessTest() {
-        // Given: 회원가입 요청 데이터와 이미 사용하지 않은 이메일
-        UserRegisterRequest request = new UserRegisterRequest("new@example.com", "password123",
-            "NewUser");
+    @DisplayName("회원가입 이메일 인증 요청 성공 테스트")
+    void initiateRegistrationSuccessTest() {
+        // Given
+        UserRegisterRequest request = new UserRegisterRequest(
+            "newuser@example.com", "password123", "password123", "NewUser"
+        );
+        when(userRepository.existsByEmail(request.email())).thenReturn(false);
 
-        when(userRepository.existsByEmail("new@example.com"))
-            .thenReturn(false);
-        when(passwordEncoder.encode("password123"))
-            .thenReturn("encoded_password");
+        // When
+        userService.initiateRegistration(request);
+
+        // Then
+        verify(userRepository, times(1)).existsByEmail(request.email());
+        verify(valueOperations, times(1))
+            .set(anyString(), anyString(), eq(Duration.ofHours(24)));
+        verify(mailUtil, times(1)).sendVerificationMail(eq(request.email()), anyString());
+    }
+
+    @Test
+    @DisplayName("회원가입 이메일 인증 요청 실패 테스트 - 이메일 중복")
+    void initiateRegistrationFailureEmailExistsTest() {
+        // Given
+        UserRegisterRequest request = new UserRegisterRequest(
+            "duplicate@example.com", "password123", "password123", "DuplicateUser"
+        );
+        when(userRepository.existsByEmail(request.email())).thenReturn(true);
+
+        // When & Then
+        CustomException exception = assertThrows(CustomException.class, () ->
+            userService.initiateRegistration(request)
+        );
+        assertEquals(ErrorCode.EMAIL_ALREADY_EXISTS, exception.getErrorCode());
+        verify(userRepository, times(1)).existsByEmail(request.email());
+    }
+
+    @Test
+    @DisplayName("인증 이메일 재전송 성공 테스트")
+    void resendVerificationEmailSuccessTest() {
+        // Given
+        when(userRepository.existsByEmail("resend@example.com")).thenReturn(true);
+
+        // When
+        userService.resendVerificationEmail("resend@example.com");
+
+        // Then
+        verify(userRepository, times(1)).existsByEmail("resend@example.com");
+        verify(valueOperations, times(1))
+            .set(anyString(), anyString(), eq(Duration.ofHours(24)));
+        verify(mailUtil, times(1)).sendVerificationMail(eq("resend@example.com"), anyString());
+    }
+
+    @Test
+    @DisplayName("인증 이메일 재전송 실패 테스트 - 사용자 없음")
+    void resendVerificationEmailFailureUserNotFoundTest() {
+        // Given
+        when(userRepository.existsByEmail("notfound@example.com")).thenReturn(false);
+
+        // When & Then
+        CustomException exception = assertThrows(CustomException.class, () ->
+            userService.resendVerificationEmail("notfound@example.com")
+        );
+        assertEquals(ErrorCode.USER_NOT_FOUND, exception.getErrorCode());
+        verify(userRepository, times(1)).existsByEmail("notfound@example.com");
+    }
+
+    @Test
+    @DisplayName("회원가입 완료 성공 테스트")
+    void completeRegistrationSuccessTest() throws Exception {
+        // Given
+        String token = "validToken";
+        VerificationTokenDto tokenDto = new VerificationTokenDto(
+            token, "complete@example.com", LocalDateTime.now().plusHours(1)
+        );
+        String tokenData = objectMapper.writeValueAsString(tokenDto);
+
+        when(valueOperations.get("verification:token:" + token)).thenReturn(tokenData);
+        when(objectMapper.readValue(tokenData, VerificationTokenDto.class)).thenReturn(tokenDto);
+        when(passwordEncoder.encode("password123")).thenReturn("encoded_password");
+
         User savedUser = User.builder()
-            .email("new@example.com")
+            .email("complete@example.com")
             .password("encoded_password")
-            .nickname("NewUser")
+            .nickname("CompleteUser")
             .role(Role.VISITOR)
             .build();
-        when(userRepository.save(any(User.class)))
-            .thenReturn(savedUser);
+        when(userRepository.save(any(User.class))).thenReturn(savedUser);
 
-        // When: 회원가입 서비스 호출
-        UserRegisterResponse response = userService.register(request);
+        // When
+        UserRegisterResponse response = userService.completeRegistration(
+            token, "password123", "CompleteUser"
+        );
 
-        // Then: 결과 검증
-        assertEquals("new@example.com", response.email());
-        assertEquals("NewUser", response.nickname());
+        // Then
+        assertEquals("complete@example.com", response.email());
+        assertEquals("CompleteUser", response.nickname());
         assertEquals(Role.VISITOR, response.role());
 
-        // Verify: Mock 메서드 호출 검증
-        verify(userRepository, times(1)).existsByEmail("new@example.com");
-        verify(passwordEncoder, times(1)).encode("password123");
+        verify(valueOperations, times(1)).get("verification:token:" + token);
+        verify(redisTemplate, times(1)).delete("verification:token:" + token);
         verify(userRepository, times(1)).save(any(User.class));
     }
 
     @Test
-    @DisplayName("회원가입 실패 테스트 - 이메일 중복")
-    void registerFailureEmailAlreadyExistsTest() {
-        // Given: 중복된 이메일이 존재하는 경우
-        UserRegisterRequest request = new UserRegisterRequest("duplicate@example.com",
-            "password123", "DuplicateUser");
+    @DisplayName("회원가입 완료 실패 테스트 - 토큰 없음")
+    void completeRegistrationFailureInvalidTokenTest() {
+        // Given
+        String token = "invalidToken";
+        when(valueOperations.get("verification:token:" + token)).thenReturn(null);
 
-        when(userRepository.existsByEmail("duplicate@example.com"))
-            .thenReturn(true);
-
-        // When & Then: 예외 검증
+        // When & Then
         CustomException exception = assertThrows(CustomException.class, () ->
-            userService.register(request)
+            userService.completeRegistration(token, "password123", "NewUser")
+        );
+        assertEquals(ErrorCode.INVALID_TOKEN, exception.getErrorCode());
+        verify(valueOperations, times(1)).get("verification:token:" + token);
+    }
+
+    @Test
+    @DisplayName("회원가입 완료 실패 테스트 - 토큰 만료")
+    void completeRegistrationFailureTokenExpiredTest() throws Exception {
+        // Given
+        String token = "expiredToken";
+        VerificationTokenDto tokenDto = new VerificationTokenDto(
+            token, "expired@example.com", LocalDateTime.now().minusHours(1)
+        );
+        String tokenData = objectMapper.writeValueAsString(tokenDto);
+
+        when(valueOperations.get("verification:token:" + token)).thenReturn(tokenData);
+        when(objectMapper.readValue(tokenData, VerificationTokenDto.class)).thenReturn(tokenDto);
+
+        // When & Then
+        CustomException exception = assertThrows(CustomException.class, () ->
+            userService.completeRegistration(token, "password123", "ExpiredUser")
         );
 
-        assertEquals(ErrorCode.EMAIL_ALREADY_EXISTS, exception.getErrorCode());
-
-        // Verify: Mock 메서드 호출 검증
-        verify(userRepository, times(1)).existsByEmail("duplicate@example.com");
-        verifyNoInteractions(passwordEncoder);
-        verify(userRepository, times(0)).save(any(User.class));
+        assertEquals(ErrorCode.TOKEN_EXPIRED, exception.getErrorCode());
+        verify(valueOperations, times(1)).get("verification:token:" + token);
     }
 
     @Test
