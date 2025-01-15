@@ -21,7 +21,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class VerificationToken {
 
-    // User ID(PK)
+    // ID(PK)
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
