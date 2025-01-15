@@ -7,10 +7,21 @@ import com.example.resumeandportfolio.model.dto.user.UserRegisterRequest;
 import com.example.resumeandportfolio.model.dto.user.UserRegisterResponse;
 import com.example.resumeandportfolio.model.dto.user.UserUpdateRequest;
 import com.example.resumeandportfolio.model.dto.user.UserUpdateResponse;
+import com.example.resumeandportfolio.model.dto.user.VerificationTokenDto;
 import com.example.resumeandportfolio.model.entity.user.User;
+import com.example.resumeandportfolio.model.enums.Role;
 import com.example.resumeandportfolio.repository.user.UserRepository;
+import com.example.resumeandportfolio.util.mail.MailUtil;
 import com.example.resumeandportfolio.util.mapper.UserMapper;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,7 +39,13 @@ import org.springframework.transaction.annotation.Transactional;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final StringRedisTemplate redisTemplate;
     private final PasswordEncoder passwordEncoder;
+    private final MailUtil mailUtil;
+    private final ObjectMapper objectMapper;
+
+    @Value("${verification.token.expiration.hours}")
+    private int expirationHours;
 
     // 로그인 로직
     @Transactional
@@ -44,19 +61,89 @@ public class UserService {
         return UserMapper.toLoginResponse(user);
     }
 
-    // 회원 가입 로직
+    // 회원 가입 이메일 인증 요청 로직
     @Transactional
-    public UserRegisterResponse register(UserRegisterRequest request) {
-        // 이메일 중복 확인
+    public void initiateRegistration(UserRegisterRequest request) {
+        // 이메일 중복 체크
         if (userRepository.existsByEmail(request.email())) {
             throw new CustomException(ErrorCode.EMAIL_ALREADY_EXISTS);
         }
 
-        String encodedPassword = passwordEncoder.encode(request.password());
-        User user = UserMapper.toEntity(request, encodedPassword);
-        User savedUser = userRepository.save(user);
+        // 패스워드 재확인 로직
+        if (!request.password().equals(request.confirmPassword())) {
+            throw new CustomException(ErrorCode.INVALID_PASSWORD_CONFIRMATION);
+        }
 
-        return UserMapper.toResponse(savedUser);
+        // VerificationToken 생성 및 Redis 저장
+        String token = UUID.randomUUID().toString();
+        VerificationTokenDto verificationToken = new VerificationTokenDto(
+            token, request.email(), LocalDateTime.now().plusHours(expirationHours)
+        );
+
+        try {
+            ValueOperations<String, String> valueOps = redisTemplate.opsForValue();
+            valueOps.set("verification:token:" + token, objectMapper.writeValueAsString(verificationToken), Duration.ofHours(expirationHours));
+        } catch (Exception e) {
+            throw new CustomException(ErrorCode.REDIS_SAVE_ERROR);
+        }
+
+        mailUtil.sendVerificationMail(request.email(), token);
+    }
+
+    // 인증 이메일 재전송 로직
+    @Transactional
+    public void resendVerificationEmail(String email) {
+        if (!userRepository.existsByEmail(email)) {
+            throw new CustomException(ErrorCode.USER_NOT_FOUND);
+        }
+
+        // 새로운 VerificationToken 생성 및 Redis 저장
+        String token = UUID.randomUUID().toString();
+        VerificationTokenDto verificationToken = new VerificationTokenDto(
+            token, email, LocalDateTime.now().plusHours(expirationHours)
+        );
+
+        try {
+            ValueOperations<String, String> valueOps = redisTemplate.opsForValue();
+            valueOps.set("verification:token:" + token, objectMapper.writeValueAsString(verificationToken), Duration.ofHours(expirationHours));
+        } catch (Exception e) {
+            throw new CustomException(ErrorCode.REDIS_SAVE_ERROR);
+        }
+
+        mailUtil.sendVerificationMail(email, token);
+    }
+
+    // 회원 가입 완료 로직
+    @Transactional
+    public UserRegisterResponse completeRegistration(String token, String password, String nickname) {
+        ValueOperations<String, String> valueOps = redisTemplate.opsForValue();
+        String tokenData = valueOps.get("verification:token:" + token);
+
+        if (tokenData == null) {
+            throw new CustomException(ErrorCode.INVALID_TOKEN);
+        }
+
+        try {
+            VerificationTokenDto verificationToken = objectMapper.readValue(tokenData, VerificationTokenDto.class);
+            if (verificationToken.isExpired()) {
+                throw new CustomException(ErrorCode.TOKEN_EXPIRED);
+            }
+
+            String encodedPassword = passwordEncoder.encode(password);
+            User user = User.builder()
+                .email(verificationToken.email())
+                .password(encodedPassword)
+                .nickname(nickname)
+                .role(Role.VISITOR)
+                .build();
+
+            User savedUser = userRepository.save(user);
+            redisTemplate.delete("verification:token:" + token);
+
+            return UserMapper.toResponse(savedUser);
+        } catch (JsonProcessingException e) {
+            throw new CustomException(ErrorCode.REDIS_PARSE_ERROR);
+        }
     }
 
     // 회원 수정 로직

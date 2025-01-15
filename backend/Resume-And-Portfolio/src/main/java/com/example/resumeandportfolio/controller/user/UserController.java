@@ -17,6 +17,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -60,12 +61,33 @@ public class UserController {
         return ResponseEntity.ok(loginResponse);
     }
 
-    // 회원 가입 API
-    @PostMapping("/register")
-    public ResponseEntity<UserRegisterResponse> register(
-        @Valid @RequestBody UserRegisterRequest request
+    // 회원 가입 이메일 인증 요청 API
+    @PostMapping("/register/initiate")
+    public ResponseEntity<String> initiateRegistration(
+        @Valid @RequestBody UserRegisterRequest request) {
+        userService.initiateRegistration(request);
+        return ResponseEntity.status(HttpStatus.CREATED)
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("인증 이메일이 발송되었습니다.");
+    }
+
+    // 인증 이메일 재전송 API
+    @PostMapping("/register/resend")
+    public ResponseEntity<String> resendVerificationEmail(@RequestParam String email) {
+        userService.resendVerificationEmail(email);
+        return ResponseEntity.ok()
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("새로운 인증 이메일이 발송되었습니다.");
+    }
+
+    // 회원 가입 완료 API
+    @PostMapping("/register/complete")
+    public ResponseEntity<UserRegisterResponse> completeRegistration(
+        @RequestParam String token,
+        @RequestParam String password,
+        @RequestParam String nickname
     ) {
-        UserRegisterResponse response = userService.register(request);
+        UserRegisterResponse response = userService.completeRegistration(token, password, nickname);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
