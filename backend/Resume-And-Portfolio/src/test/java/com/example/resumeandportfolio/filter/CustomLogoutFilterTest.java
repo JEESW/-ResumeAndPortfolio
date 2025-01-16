@@ -45,7 +45,7 @@ class CustomLogoutFilterTest {
     @DisplayName("로그아웃 성공 테스트 - Refresh Token이 유효하고 삭제된 경우")
     void logoutSuccessTest() throws Exception {
         // Given
-        MockHttpServletRequest request = new MockHttpServletRequest("POST", "/logout");
+        MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/users/logout");
         MockHttpServletResponse response = new MockHttpServletResponse();
         MockFilterChain filterChain = new MockFilterChain();
 
@@ -74,7 +74,7 @@ class CustomLogoutFilterTest {
     @DisplayName("로그아웃 실패 테스트 - Refresh Token 없음")
     void logoutFailureNoRefreshTokenTest() throws Exception {
         // Given
-        MockHttpServletRequest request = new MockHttpServletRequest("POST", "/logout");
+        MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/users/logout");
         MockHttpServletResponse response = new MockHttpServletResponse();
         MockFilterChain filterChain = new MockFilterChain();
 
@@ -90,7 +90,7 @@ class CustomLogoutFilterTest {
     @DisplayName("로그아웃 실패 테스트 - Refresh Token 만료됨")
     void logoutFailureExpiredRefreshTokenTest() throws Exception {
         // Given
-        MockHttpServletRequest request = new MockHttpServletRequest("POST", "/logout");
+        MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/users/logout");
         MockHttpServletResponse response = new MockHttpServletResponse();
         MockFilterChain filterChain = new MockFilterChain();
 
@@ -112,7 +112,7 @@ class CustomLogoutFilterTest {
     @DisplayName("로그아웃 실패 테스트 - 잘못된 토큰 카테고리")
     void logoutFailureInvalidCategoryTest() throws Exception {
         // Given
-        MockHttpServletRequest request = new MockHttpServletRequest("POST", "/logout");
+        MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/users/logout");
         MockHttpServletResponse response = new MockHttpServletResponse();
         MockFilterChain filterChain = new MockFilterChain();
 
@@ -135,7 +135,7 @@ class CustomLogoutFilterTest {
     @DisplayName("로그아웃 실패 테스트 - Redis에 저장된 토큰과 불일치")
     void logoutFailureTokenMismatchTest() throws Exception {
         // Given
-        MockHttpServletRequest request = new MockHttpServletRequest("POST", "/logout");
+        MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/users/logout");
         MockHttpServletResponse response = new MockHttpServletResponse();
         MockFilterChain filterChain = new MockFilterChain();
 

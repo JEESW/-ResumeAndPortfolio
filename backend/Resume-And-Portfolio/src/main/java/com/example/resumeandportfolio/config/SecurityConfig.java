@@ -60,7 +60,7 @@ public class SecurityConfig {
             .formLogin(formLogin -> formLogin.disable())
             .httpBasic(httpBasic -> httpBasic.disable())
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/", "/reissue", "/api/users/login", "/api/users/join").permitAll()
+                .requestMatchers("/", "/api/users/reissue", "/api/users/login", "/api/users/join").permitAll()
                 .anyRequest().authenticated()
             )
             .addFilterBefore(new JwtFilter(jwtUtil), LoginFilter.class)
