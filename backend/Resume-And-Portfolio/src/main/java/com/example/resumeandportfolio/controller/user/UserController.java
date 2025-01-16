@@ -10,7 +10,7 @@ import com.example.resumeandportfolio.model.dto.user.UserRegisterResponse;
 import com.example.resumeandportfolio.model.dto.user.UserRegisterRequest;
 import com.example.resumeandportfolio.model.dto.user.UserUpdateRequest;
 import com.example.resumeandportfolio.model.dto.user.UserUpdateResponse;
-import com.example.resumeandportfolio.service.global.RefreshTokenService;
+import com.example.resumeandportfolio.service.user.RefreshTokenService;
 import com.example.resumeandportfolio.service.user.UserService;
 import com.example.resumeandportfolio.util.jwt.JwtUtil;
 import jakarta.servlet.http.Cookie;

@@ -3,7 +3,7 @@ package com.example.resumeandportfolio.filter;
 import com.example.resumeandportfolio.model.entity.user.CustomUserDetails;
 import com.example.resumeandportfolio.model.entity.user.User;
 import com.example.resumeandportfolio.model.enums.Role;
-import com.example.resumeandportfolio.service.global.RefreshTokenService;
+import com.example.resumeandportfolio.service.user.RefreshTokenService;
 import com.example.resumeandportfolio.util.jwt.JwtUtil;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletResponse;

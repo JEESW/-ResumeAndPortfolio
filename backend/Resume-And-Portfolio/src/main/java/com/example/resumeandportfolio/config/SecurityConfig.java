@@ -3,7 +3,7 @@ package com.example.resumeandportfolio.config;
 import com.example.resumeandportfolio.filter.CustomLogoutFilter;
 import com.example.resumeandportfolio.filter.JwtFilter;
 import com.example.resumeandportfolio.filter.LoginFilter;
-import com.example.resumeandportfolio.service.global.RefreshTokenService;
+import com.example.resumeandportfolio.service.user.RefreshTokenService;
 import com.example.resumeandportfolio.util.jwt.JwtUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.Collections;

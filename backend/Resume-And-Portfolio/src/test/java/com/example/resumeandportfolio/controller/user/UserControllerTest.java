@@ -5,7 +5,7 @@ import com.example.resumeandportfolio.exception.ErrorCode;
 import com.example.resumeandportfolio.exception.GlobalExceptionHandler;
 import com.example.resumeandportfolio.model.dto.user.*;
 import com.example.resumeandportfolio.model.enums.Role;
-import com.example.resumeandportfolio.service.global.RefreshTokenService;
+import com.example.resumeandportfolio.service.user.RefreshTokenService;
 import com.example.resumeandportfolio.service.user.UserService;
 import com.example.resumeandportfolio.util.jwt.JwtUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;

@@ -1,4 +1,4 @@
-package com.example.resumeandportfolio.service.global;
+package com.example.resumeandportfolio.service.user;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

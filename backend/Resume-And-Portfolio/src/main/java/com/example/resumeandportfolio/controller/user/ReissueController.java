@@ -1,6 +1,6 @@
-package com.example.resumeandportfolio.controller.global;
+package com.example.resumeandportfolio.controller.user;
 
-import com.example.resumeandportfolio.service.global.RefreshTokenService;
+import com.example.resumeandportfolio.service.user.RefreshTokenService;
 import com.example.resumeandportfolio.util.jwt.JwtUtil;
 import io.jsonwebtoken.ExpiredJwtException;
 import jakarta.servlet.http.Cookie;
