@@ -78,9 +78,9 @@ jobs:
           echo "SPRING_JPA_HIBERNATE_DDL_AUTO=${{ secrets.SPRING_JPA_HIBERNATE_DDL_AUTO }}" >> .env
           echo "SPRING_JPA_SHOW_SQL=${{ secrets.SPRING_JPA_SHOW_SQL }}" >> .env
           echo "REACT_APP_API_URL=${{ secrets.REACT_APP_API_URL }}" >> .env
-          echo "SPRING_REDIS_HOST=${{ secrets.SPRING_REDIS_HOST }}" >> .env
-          echo "SPRING_REDIS_PORT=${{ secrets.SPRING_REDIS_PORT }}" >> .env
-          echo "SPRING_REDIS_PASSWORD=${{ secrets.SPRING_REDIS_PASSWORD }}" >> .env
+          echo "SPRING_DATA_REDIS_HOST=${{ secrets.SPRING_DATA_REDIS_HOST }}" >> .env
+          echo "SPRING_DATA_REDIS_PORT=${{ secrets.SPRING_DATA_REDIS_PORT }}" >> .env
+          echo "SPRING_DATA_REDIS_PASSWORD=${{ secrets.SPRING_DATA_REDIS_PASSWORD }}" >> .env
           echo "SPRING_JWT_SECRET_KEY=${{ secrets.SPRING_JWT_SECRET_KEY }}" >> .env
           echo "SPRING_MAIL_HOST=${{ secrets.SPRING_MAIL_HOST }}" >> .env
           echo "SPRING_MAIL_PORT=${{ secrets.SPRING_MAIL_PORT }}" >> .env
