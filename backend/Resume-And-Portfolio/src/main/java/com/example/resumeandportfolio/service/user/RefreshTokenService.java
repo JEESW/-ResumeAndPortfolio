@@ -1,4 +1,4 @@
-package com.example.resumeandportfolio.service.global;
+package com.example.resumeandportfolio.service.user;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;

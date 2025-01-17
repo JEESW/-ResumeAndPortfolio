@@ -20,6 +20,10 @@ public record UserRegisterRequest(
     @Size(min = 6, message = "비밀번호는 최소 6자 이상이어야 합니다.")
     String password,
 
+    @NotBlank(message = "비밀번호 확인은 필수 입력 항목입니다.")
+    @Size(min = 6, message = "비밀번호는 최소 6자 이상이어야 합니다.")
+    String confirmPassword,
+
     @NotBlank(message = "닉네임은 필수 입력 항목입니다.")
     @Size(max = 15, message = "닉네임은 최대 15자까지 가능합니다.")
     String nickname
