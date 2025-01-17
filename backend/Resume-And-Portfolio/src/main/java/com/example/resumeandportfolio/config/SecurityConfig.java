@@ -6,6 +6,7 @@ import com.example.resumeandportfolio.filter.LoginFilter;
 import com.example.resumeandportfolio.service.user.RefreshTokenService;
 import com.example.resumeandportfolio.util.jwt.JwtUtil;
 import jakarta.servlet.http.HttpServletRequest;
+import java.util.Arrays;
 import java.util.Collections;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -47,12 +48,12 @@ public class SecurityConfig {
                     CorsConfiguration configuration = new CorsConfiguration();
 
                     configuration.setAllowedOrigins(
-                        Collections.singletonList("http://localhost:3000"));
+                        Collections.singletonList("https://jsw-resumeandportfolio.com"));
                     configuration.setAllowedMethods(Collections.singletonList("*"));
                     configuration.setAllowCredentials(true);
                     configuration.setAllowedHeaders(Collections.singletonList("*"));
                     configuration.setMaxAge(3600L);
-                    configuration.setExposedHeaders(Collections.singletonList("Authorization"));
+                    configuration.setExposedHeaders(Arrays.asList("Set-Cookie", "Authorization"));
 
                     return configuration;
                 }
@@ -60,14 +61,18 @@ public class SecurityConfig {
             .formLogin(formLogin -> formLogin.disable())
             .httpBasic(httpBasic -> httpBasic.disable())
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/", "/api/users/reissue", "/api/users/login", "/api/users/join").permitAll()
+                .requestMatchers("/", "/api/users/reissue", "/api/users/login", "/api/users/join",
+                    "/api/users/oauth/**")
+                .permitAll()
                 .anyRequest().authenticated()
             )
             .addFilterBefore(new JwtFilter(jwtUtil), LoginFilter.class)
             .addFilterAt(
-                new LoginFilter(authenticationManager(authenticationConfiguration), jwtUtil, refreshTokenService),
+                new LoginFilter(authenticationManager(authenticationConfiguration), jwtUtil,
+                    refreshTokenService),
                 UsernamePasswordAuthenticationFilter.class)
-            .addFilterBefore(new CustomLogoutFilter(jwtUtil, refreshTokenService), LogoutFilter.class)
+            .addFilterBefore(new CustomLogoutFilter(jwtUtil, refreshTokenService),
+                LogoutFilter.class)
             .sessionManagement(session -> session
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
