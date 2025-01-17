@@ -3,9 +3,12 @@ package com.example.resumeandportfolio.config;
 import com.example.resumeandportfolio.filter.CustomLogoutFilter;
 import com.example.resumeandportfolio.filter.JwtFilter;
 import com.example.resumeandportfolio.filter.LoginFilter;
+import com.example.resumeandportfolio.service.user.CustomOAuth2UserService;
 import com.example.resumeandportfolio.service.user.RefreshTokenService;
 import com.example.resumeandportfolio.util.jwt.JwtUtil;
+import com.example.resumeandportfolio.util.oauth2.OAuth2AuthenticationSuccessHandler;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.util.Arrays;
 import java.util.Collections;
 import lombok.RequiredArgsConstructor;
@@ -23,7 +26,7 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 
 /**
- * Security Config
+ * Security Configuration
  *
  * @author Ji-Seungwoo
  * @version 1.0
@@ -36,6 +39,8 @@ public class SecurityConfig {
     private final AuthenticationConfiguration authenticationConfiguration;
     private final JwtUtil jwtUtil;
     private final RefreshTokenService refreshTokenService;
+    private final CustomOAuth2UserService customOAuth2UserService;
+    private final OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler;
 
     // 시큐리티 체인
     @Bean
@@ -60,6 +65,14 @@ public class SecurityConfig {
             }))
             .formLogin(formLogin -> formLogin.disable())
             .httpBasic(httpBasic -> httpBasic.disable())
+            .oauth2Login(oauth2 -> oauth2
+                .userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService))
+                .successHandler(oAuth2AuthenticationSuccessHandler)
+                .failureHandler((request, response, exception) -> {
+                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                    response.getWriter().write("OAuth2 Authentication Failed");
+                })
+            )
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/", "/api/users/reissue", "/api/users/login", "/api/users/join",
                     "/api/users/oauth/**")

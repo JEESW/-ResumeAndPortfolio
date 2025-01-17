@@ -9,7 +9,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 /**
- * Redis Config
+ * Redis Configuration
  *
  * @author Ji-Seungwoo
  * @version 1.0
