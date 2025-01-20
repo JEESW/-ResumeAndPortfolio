@@ -1,9 +1,13 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 
 const Header = () => {
+  const navigate = useNavigate();
+
   return (
       <header className="bg-white shadow-md">
-        <div className="container mx-auto px-4 py-3 flex justify-between items-center">
+        <div
+            className="container mx-auto px-4 py-3 flex justify-between items-center">
           {/* 로고 */}
           <div className="text-lg font-bold text-blue-600">
             Resume&Portfolio
@@ -27,9 +31,15 @@ const Header = () => {
 
           {/* 로그인 및 버튼 */}
           <div className="flex items-center space-x-4">
-            <button className="text-gray-700 hover:text-blue-600">Log In</button>
-            <button className="bg-gray-800 text-white px-4 py-2 rounded-lg hover:bg-gray-700">
-              My Page
+            <button
+                onClick={() => navigate("/login")}
+                className="text-gray-700 hover:text-blue-600"
+            >
+              Login
+            </button>
+            <button
+                className="bg-gray-800 text-white px-4 py-2 rounded-lg hover:bg-gray-700">
+              Join
             </button>
           </div>
 

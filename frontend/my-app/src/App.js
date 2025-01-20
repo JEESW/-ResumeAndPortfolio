@@ -6,6 +6,7 @@ import Home from "./pages/Home";
 import Resume from "./pages/Resume";
 import Portfolio from "./pages/Portfolio";
 import Faq from "./pages/Faq";
+import Login from "./pages/Login"
 
 function App() {
   return (
@@ -17,6 +18,7 @@ function App() {
             <Route path="/resume" element={<Resume />} />
             <Route path="/portfolio" element={<Portfolio />} />
             <Route path="/faq" element={<Faq />} />
+            <Route path="/login" element={<Login />} />
           </Routes>
         </main>
         <Footer />

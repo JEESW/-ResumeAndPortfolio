@@ -1,0 +1,94 @@
+import React, {useState} from "react";
+import axios from "axios";
+
+const Login = () => {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState(null);
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setError(null);
+
+    try {
+      const response = await axios.post(
+          "https://jsw-resumeandportfolio.com/api/users/login",
+          {
+            email,
+            password,
+          },
+          {
+            withCredentials: true, // Refresh Token을 쿠키에 저장
+          }
+      );
+
+      const accessToken = response.headers["authorization"];
+      localStorage.setItem("accessToken", accessToken); // Access Token 저장
+      alert("로그인 성공!");
+      window.location.href = "/"; // 로그인 후 홈으로 이동
+    } catch (err) {
+      setError("로그인에 실패했습니다. 이메일 또는 비밀번호를 확인해주세요.");
+    }
+  };
+
+  return (
+      <div
+          className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
+          <h2 className="text-2xl font-bold mb-4 text-gray-800">로그인</h2>
+          <p className="text-gray-600 mb-6">환영합니다!</p>
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div>
+              <label htmlFor="email" className="block text-gray-700">
+                Email
+              </label>
+              <input
+                  type="email"
+                  id="email"
+                  className="w-full px-4 py-2 border rounded-lg"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+              />
+            </div>
+            <div>
+              <label htmlFor="password" className="block text-gray-700">
+                Password
+              </label>
+              <input
+                  type="password"
+                  id="password"
+                  className="w-full px-4 py-2 border rounded-lg"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+              />
+            </div>
+            {error && <p className="text-red-500 text-sm">{error}</p>}
+            <button
+                type="submit"
+                className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition"
+            >
+              Sign in
+            </button>
+          </form>
+          <div className="mt-6 text-center">
+            <a
+                href="https://jsw-resumeandportfolio.com/api/users/oauth/google"
+                className="block bg-gray-200 py-2 rounded-lg shadow hover:bg-gray-300"
+            >
+              Sign in with Google
+            </a>
+            <p className="mt-4 text-gray-600 text-sm">
+              Don't have an account?{" "}
+              <a href="/signup" className="text-blue-600">
+                Sign up now
+              </a>
+            </p>
+          </div>
+        </div>
+      </div>
+  );
+};
+
+export default Login;
