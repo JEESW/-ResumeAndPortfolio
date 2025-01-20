@@ -1,5 +1,5 @@
 import React from "react";
-import { useNavigate } from "react-router-dom";
+import {useNavigate} from "react-router-dom";
 
 const Header = () => {
   const navigate = useNavigate();
@@ -10,7 +10,9 @@ const Header = () => {
             className="container mx-auto px-4 py-3 flex justify-between items-center">
           {/* 로고 */}
           <div className="text-lg font-bold text-blue-600">
-            Resume&Portfolio
+            <a href="/" className="text-blue-600">
+              Resume&Portfolio
+            </a>
           </div>
 
           {/* 네비게이션 */}
@@ -38,8 +40,10 @@ const Header = () => {
               Login
             </button>
             <button
-                className="bg-gray-800 text-white px-4 py-2 rounded-lg hover:bg-gray-700">
-              Join
+                onClick={() => navigate("/signup")}
+                className="bg-gray-800 text-white px-4 py-2 rounded-lg hover:bg-gray-700"
+            >
+              Sign Up
             </button>
           </div>
 

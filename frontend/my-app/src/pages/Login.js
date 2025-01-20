@@ -1,7 +1,9 @@
 import React, {useState} from "react";
+import {useNavigate} from "react-router-dom";
 import axios from "axios";
 
 const Login = () => {
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState(null);
@@ -81,9 +83,12 @@ const Login = () => {
             </a>
             <p className="mt-4 text-gray-600 text-sm">
               Don't have an account?{" "}
-              <a href="/signup" className="text-blue-600">
+              <span
+                  className="text-blue-600 cursor-pointer"
+                  onClick={() => navigate("/signup")}
+              >
                 Sign up now
-              </a>
+              </span>
             </p>
           </div>
         </div>
