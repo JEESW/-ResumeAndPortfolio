@@ -48,7 +48,7 @@ class OAuth2AuthenticationSuccessHandlerTest {
     void loadUser_WhenUserExists() throws IOException {
         // Given
         String email = "test@example.com";
-        String role = "ROLE_USER";
+        String role = "ROLE_VISITOR";
 
         OAuth2User mockOAuth2User = new DefaultOAuth2User(
             Collections.emptySet(),
@@ -88,7 +88,7 @@ class OAuth2AuthenticationSuccessHandlerTest {
     void loadUser_WhenUserDoesNotExist() throws IOException {
         // Given
         String email = "newuser@example.com";
-        String role = "ROLE_USER";
+        String role = "ROLE_VISITOR";
 
         OAuth2User mockOAuth2User = new DefaultOAuth2User(
             Collections.emptySet(),
