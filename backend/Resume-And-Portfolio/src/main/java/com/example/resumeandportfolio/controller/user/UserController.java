@@ -4,6 +4,7 @@ import com.example.resumeandportfolio.exception.CustomException;
 import com.example.resumeandportfolio.exception.ErrorCode;
 import com.example.resumeandportfolio.model.dto.user.PasswordResetConfirmDto;
 import com.example.resumeandportfolio.model.dto.user.PasswordResetRequestDto;
+import com.example.resumeandportfolio.model.dto.user.UserLoadInfoDto;
 import com.example.resumeandportfolio.model.dto.user.UserLoginRequest;
 import com.example.resumeandportfolio.model.dto.user.UserLoginResponse;
 import com.example.resumeandportfolio.model.dto.user.UserRegisterResponse;
@@ -40,6 +41,18 @@ public class UserController {
     private final UserService userService;
     private final JwtUtil jwtUtil;
     private final RefreshTokenService refreshTokenService;
+
+    // 현재 사용자 정보 조회 API
+    @GetMapping("/me")
+    public ResponseEntity<UserLoadInfoDto> getCurrentUser(Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new CustomException(ErrorCode.UNAUTHORIZED); // 인증되지 않은 요청 처리
+        }
+
+        String email = authentication.getName();
+        UserLoadInfoDto userResponse = userService.getUserByEmail(email);
+        return ResponseEntity.ok(userResponse);
+    }
 
     // 로그인 API
     @PostMapping("/login")
