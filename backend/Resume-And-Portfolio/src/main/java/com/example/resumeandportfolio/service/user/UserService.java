@@ -4,6 +4,7 @@ import com.example.resumeandportfolio.exception.CustomException;
 import com.example.resumeandportfolio.exception.ErrorCode;
 import com.example.resumeandportfolio.model.dto.user.PasswordResetConfirmDto;
 import com.example.resumeandportfolio.model.dto.user.PasswordResetRequestDto;
+import com.example.resumeandportfolio.model.dto.user.UserLoadInfoDto;
 import com.example.resumeandportfolio.model.dto.user.UserLoginResponse;
 import com.example.resumeandportfolio.model.dto.user.UserRegisterRequest;
 import com.example.resumeandportfolio.model.dto.user.UserRegisterResponse;
@@ -48,6 +49,14 @@ public class UserService {
 
     @Value("${verification.token.expiration.hours}")
     private int expirationHours;
+
+    // 이메일로 사용자 정보 가져오기
+    public UserLoadInfoDto getUserByEmail(String email) {
+        User user = userRepository.findByEmailAndDeletedAtIsNull(email)
+            .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        return UserMapper.toUserLoadInfoDto(user);
+    }
 
     // 로그인 로직
     @Transactional

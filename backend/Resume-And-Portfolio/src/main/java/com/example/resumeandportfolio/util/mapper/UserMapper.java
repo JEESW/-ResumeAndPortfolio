@@ -1,5 +1,6 @@
 package com.example.resumeandportfolio.util.mapper;
 
+import com.example.resumeandportfolio.model.dto.user.UserLoadInfoDto;
 import com.example.resumeandportfolio.model.dto.user.UserLoginResponse;
 import com.example.resumeandportfolio.model.dto.user.UserRegisterRequest;
 import com.example.resumeandportfolio.model.dto.user.UserRegisterResponse;
@@ -15,6 +16,15 @@ import com.example.resumeandportfolio.model.enums.Role;
  */
 
 public class UserMapper {
+
+    // Entity → UserLoadInfo DTO
+    public static UserLoadInfoDto toUserLoadInfoDto(User user) {
+        return new UserLoadInfoDto(
+            user.getEmail(),
+            user.getNickname(),
+            user.getRole().name()
+        );
+    }
 
     // Entity → UserLoginResponse DTO
     public static UserLoginResponse toLoginResponse(User user) {

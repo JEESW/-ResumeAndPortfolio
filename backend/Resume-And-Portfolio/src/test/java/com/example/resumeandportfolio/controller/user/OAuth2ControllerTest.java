@@ -5,13 +5,12 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
-
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 
 /**
- * OAuth2 Controller
+ * OAuth2 Controller Test
  *
  * @author Ji-Seungwoo
  * @version 1.0
@@ -28,7 +27,6 @@ class OAuth2ControllerTest {
     void redirectToGoogleOAuthTest() throws Exception {
         mockMvc.perform(get("/api/users/oauth/google"))
             .andExpect(status().isFound())
-            .andExpect(MockMvcResultMatchers.header()
-                .string("Location", "http://localhost/oauth2/authorization/google"));
+            .andExpect(header().string("Location", "http://localhost/oauth2/authorization/google"));
     }
 }

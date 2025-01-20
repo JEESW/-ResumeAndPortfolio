@@ -48,7 +48,7 @@ class OAuth2AuthenticationSuccessHandlerTest {
     void loadUser_WhenUserExists() throws IOException {
         // Given
         String email = "test@example.com";
-        String role = "ROLE_USER";
+        String role = "ROLE_VISITOR";
 
         OAuth2User mockOAuth2User = new DefaultOAuth2User(
             Collections.emptySet(),
@@ -80,7 +80,7 @@ class OAuth2AuthenticationSuccessHandlerTest {
             cookie -> "refresh".equals(cookie.getName()) && "mock-refresh-token".equals(
                 cookie.getValue())));
         verify(response, times(1)).sendRedirect(
-            "https://jsw-resumeandportfolio.com/social-login/success");
+            "https://www.jsw-resumeandportfolio.com/social-login/success");
     }
 
     @Test
@@ -88,7 +88,7 @@ class OAuth2AuthenticationSuccessHandlerTest {
     void loadUser_WhenUserDoesNotExist() throws IOException {
         // Given
         String email = "newuser@example.com";
-        String role = "ROLE_USER";
+        String role = "ROLE_VISITOR";
 
         OAuth2User mockOAuth2User = new DefaultOAuth2User(
             Collections.emptySet(),
@@ -120,6 +120,6 @@ class OAuth2AuthenticationSuccessHandlerTest {
             cookie -> "refresh".equals(cookie.getName()) && "mock-refresh-token".equals(
                 cookie.getValue())));
         verify(response, times(1)).sendRedirect(
-            "https://jsw-resumeandportfolio.com/social-login/success");
+            "https://www.jsw-resumeandportfolio.com/social-login/success");
     }
 }

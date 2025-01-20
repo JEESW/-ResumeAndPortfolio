@@ -33,8 +33,8 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
         String email = oAuth2User.getAttribute("email");
 
         // JWT 생성
-        String accessToken = jwtUtil.createJwt("access", email, "ROLE_USER", 600000L);
-        String refreshToken = jwtUtil.createJwt("refresh", email, "ROLE_USER", 86400000L);
+        String accessToken = jwtUtil.createJwt("access", email, "ROLE_VISITOR", 600000L);
+        String refreshToken = jwtUtil.createJwt("refresh", email, "ROLE_VISITOR", 86400000L);
 
         // Redis에 Refresh Token 저장
         refreshTokenService.saveRefreshToken(email, refreshToken, 86400L);
@@ -43,7 +43,7 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
         response.addCookie(createCookie("access", accessToken));
         response.addCookie(createCookie("refresh", refreshToken));
 
-        response.sendRedirect("https://jsw-resumeandportfolio.com/social-login/success");
+        response.sendRedirect("https://www.jsw-resumeandportfolio.com/social-login/success");
     }
 
     private Cookie createCookie(String key, String value) {
