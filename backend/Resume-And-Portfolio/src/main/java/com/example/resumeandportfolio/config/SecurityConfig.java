@@ -74,7 +74,7 @@ public class SecurityConfig {
                 })
             )
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/", "/api/users/reissue", "/api/users/login", "/api/users/join",
+                .requestMatchers("/", "/api/users/reissue", "/api/users/login", "/api/users/register/**",
                     "/api/users/oauth/**")
                 .permitAll()
                 .anyRequest().authenticated()
