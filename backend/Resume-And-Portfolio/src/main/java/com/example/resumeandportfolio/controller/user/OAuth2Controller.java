@@ -1,7 +1,7 @@
 package com.example.resumeandportfolio.controller.user;
 
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestRedirectFilter;
+import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -17,11 +17,10 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/users/oauth")
 public class OAuth2Controller {
 
+    // Google 인증 URL로 리다이렉트
     @GetMapping("/google")
-    public ResponseEntity<String> redirectToGoogleOAuth() {
-        String redirectUrl =
-            OAuth2AuthorizationRequestRedirectFilter.DEFAULT_AUTHORIZATION_REQUEST_BASE_URI
-                + "/google";
-        return ResponseEntity.ok(redirectUrl);
+    public void redirectToGoogleOAuth(HttpServletResponse response) throws IOException {
+        String redirectUrl = "/oauth2/authorization/google";
+        response.sendRedirect(redirectUrl);
     }
 }
