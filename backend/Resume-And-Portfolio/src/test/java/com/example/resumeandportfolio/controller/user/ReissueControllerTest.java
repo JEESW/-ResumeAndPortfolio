@@ -3,6 +3,7 @@ package com.example.resumeandportfolio.controller.user;
 import com.example.resumeandportfolio.service.user.RefreshTokenService;
 import com.example.resumeandportfolio.util.jwt.JwtUtil;
 import io.jsonwebtoken.ExpiredJwtException;
+import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -142,8 +143,11 @@ class ReissueControllerTest {
         String newRefreshToken = "newRefreshToken";
         MockHttpServletRequest request = new MockHttpServletRequest();
         MockHttpServletResponse response = new MockHttpServletResponse();
-        request.setCookies(new MockCookie("refresh", validToken));
 
+        MockCookie refreshCookie = new MockCookie("refresh", validToken);
+        request.setCookies(refreshCookie);
+
+        when(jwtUtil.isExpired(validToken)).thenReturn(false);
         when(jwtUtil.getCategory(validToken)).thenReturn("refresh");
         when(jwtUtil.getUsername(validToken)).thenReturn(username);
         when(jwtUtil.getRole(validToken)).thenReturn(role);
@@ -156,8 +160,14 @@ class ReissueControllerTest {
 
         // Then
         assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getHeader("access")).isEqualTo(newAccessToken);
-        assertThat(response.getCookies()[0].getValue()).isEqualTo(newRefreshToken);
+        assertThat(response.getHeader("Authorization")).isEqualTo("Bearer " + newAccessToken);
+
+        Cookie responseCookie = response.getCookie("refresh");
+        assertThat(responseCookie).isNotNull();
+        assertThat(responseCookie.getValue()).isEqualTo(newRefreshToken);
+        assertThat(responseCookie.isHttpOnly()).isTrue();
+        assertThat(responseCookie.getSecure()).isTrue();
+        assertThat(responseCookie.getMaxAge()).isEqualTo(24*60*60);
 
         verify(refreshTokenService).deleteRefreshToken(username);
         verify(refreshTokenService).saveRefreshToken(username, newRefreshToken, 86400000L);

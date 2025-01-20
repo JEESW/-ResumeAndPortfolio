@@ -76,7 +76,7 @@ public class ReissueController {
         refreshTokenService.deleteRefreshToken(username);
         refreshTokenService.saveRefreshToken(username, newRefresh, 86400000L);
 
-        response.setHeader("access", newAccess);
+        response.setHeader("Authorization", "Bearer " + newAccess);
         response.addCookie(createCookie("refresh", newRefresh));
 
         return new ResponseEntity<>(HttpStatus.OK);
