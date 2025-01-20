@@ -1,13 +1,44 @@
-import React from "react";
-import {useNavigate} from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
 const Header = () => {
   const navigate = useNavigate();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  // 로그인 상태 확인 (로컬 스토리지에서 JWT 확인)
+  useEffect(() => {
+    const token = localStorage.getItem("accessToken");
+    setIsLoggedIn(!!token); // 토큰이 존재하면 로그인 상태로 설정
+  }, []);
+
+  // 로그아웃 핸들러
+  const handleLogout = async () => {
+    try {
+      // 백엔드로 로그아웃 요청
+      await axios.post(
+          "https://jsw-resumeandportfolio.com/api/users/logout",
+          {}, // 로그아웃 요청에 데이터 필요 없음
+          { withCredentials: true } // 쿠키 포함 설정
+      );
+
+      // 로컬 스토리지에서 토큰 삭제
+      localStorage.removeItem("accessToken");
+
+      // 로그인 상태 초기화
+      setIsLoggedIn(false);
+
+      // 홈으로 이동
+      navigate("/");
+    } catch (err) {
+      console.error("Logout failed:", err);
+      alert("로그아웃 중 문제가 발생했습니다.");
+    }
+  };
 
   return (
       <header className="bg-white shadow-md">
-        <div
-            className="container mx-auto px-4 py-3 flex justify-between items-center">
+        <div className="container mx-auto px-4 py-3 flex justify-between items-center">
           {/* 로고 */}
           <div className="text-lg font-bold text-blue-600">
             <a href="/" className="text-blue-600">
@@ -31,20 +62,43 @@ const Header = () => {
             </a>
           </nav>
 
-          {/* 로그인 및 버튼 */}
+          {/* 로그인/로그아웃 및 버튼 */}
           <div className="flex items-center space-x-4">
-            <button
-                onClick={() => navigate("/login")}
-                className="text-gray-700 hover:text-blue-600"
-            >
-              Login
-            </button>
-            <button
-                onClick={() => navigate("/signup")}
-                className="bg-gray-800 text-white px-4 py-2 rounded-lg hover:bg-gray-700"
-            >
-              Sign Up
-            </button>
+            {!isLoggedIn ? (
+                <>
+                  {/* 로그인 버튼 */}
+                  <button
+                      onClick={() => navigate("/login")}
+                      className="text-gray-700 hover:text-blue-600"
+                  >
+                    Login
+                  </button>
+                  {/* 회원가입 버튼 */}
+                  <button
+                      onClick={() => navigate("/signup")}
+                      className="bg-gray-800 text-white px-4 py-2 rounded-lg hover:bg-gray-700"
+                  >
+                    Sign Up
+                  </button>
+                </>
+            ) : (
+                <>
+                  {/* 로그아웃 버튼 */}
+                  <button
+                      onClick={handleLogout}
+                      className="text-gray-700 hover:text-blue-600"
+                  >
+                    Logout
+                  </button>
+                  {/* 마이페이지 버튼 */}
+                  <button
+                      onClick={() => navigate("/mypage")}
+                      className="bg-gray-800 text-white px-4 py-2 rounded-lg hover:bg-gray-700"
+                  >
+                    My Page
+                  </button>
+                </>
+            )}
           </div>
 
           {/* 모바일 메뉴 */}
