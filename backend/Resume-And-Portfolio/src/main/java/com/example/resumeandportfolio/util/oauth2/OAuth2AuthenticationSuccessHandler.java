@@ -43,7 +43,7 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
         response.addCookie(createCookie("access", accessToken));
         response.addCookie(createCookie("refresh", refreshToken));
 
-        response.sendRedirect("https://jsw-resumeandportfolio.com/social-login/success");
+        response.sendRedirect("https://www.jsw-resumeandportfolio.com/social-login/success");
     }
 
     private Cookie createCookie(String key, String value) {

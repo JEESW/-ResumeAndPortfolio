@@ -53,7 +53,7 @@ public class SecurityConfig {
                     CorsConfiguration configuration = new CorsConfiguration();
 
                     configuration.setAllowedOrigins(
-                        Collections.singletonList("https://jsw-resumeandportfolio.com"));
+                        Collections.singletonList("https://www.jsw-resumeandportfolio.com"));
                     configuration.setAllowedMethods(Collections.singletonList("*"));
                     configuration.setAllowCredentials(true);
                     configuration.setAllowedHeaders(Collections.singletonList("*"));
