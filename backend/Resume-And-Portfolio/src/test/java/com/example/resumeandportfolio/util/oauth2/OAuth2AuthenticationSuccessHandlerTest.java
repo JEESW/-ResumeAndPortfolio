@@ -80,7 +80,7 @@ class OAuth2AuthenticationSuccessHandlerTest {
             cookie -> "refresh".equals(cookie.getName()) && "mock-refresh-token".equals(
                 cookie.getValue())));
         verify(response, times(1)).sendRedirect(
-            "https://jsw-resumeandportfolio.com/social-login/success");
+            "https://www.jsw-resumeandportfolio.com/social-login/success");
     }
 
     @Test
@@ -120,6 +120,6 @@ class OAuth2AuthenticationSuccessHandlerTest {
             cookie -> "refresh".equals(cookie.getName()) && "mock-refresh-token".equals(
                 cookie.getValue())));
         verify(response, times(1)).sendRedirect(
-            "https://jsw-resumeandportfolio.com/social-login/success");
+            "https://www.jsw-resumeandportfolio.com/social-login/success");
     }
 }
