@@ -66,6 +66,12 @@ public class SecurityConfig {
             .formLogin(formLogin -> formLogin.disable())
             .httpBasic(httpBasic -> httpBasic.disable())
             .oauth2Login(oauth2 -> oauth2
+                .authorizationEndpoint(authorization ->
+                    authorization.baseUri("/api/users/oauth2/authorization")
+                )
+                .redirectionEndpoint(redirection ->
+                    redirection.baseUri("/api/users/oauth2/callback/*")
+                )
                 .userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService))
                 .successHandler(oAuth2AuthenticationSuccessHandler)
                 .failureHandler((request, response, exception) -> {
@@ -75,7 +81,7 @@ public class SecurityConfig {
             )
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/", "/api/users/reissue", "/api/users/login", "/api/users/register/**",
-                    "/api/users/oauth/**")
+                    "/api/users/oauth2/**")
                 .permitAll()
                 .anyRequest().authenticated()
             )
