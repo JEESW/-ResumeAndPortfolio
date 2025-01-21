@@ -20,7 +20,7 @@ public class OAuth2Controller {
     // Google 인증 URL로 리다이렉트
     @GetMapping("/google")
     public void redirectToGoogleOAuth(HttpServletResponse response) throws IOException {
-        String redirectUrl = "/oauth2/authorization/google";
+        String redirectUrl = "https://www.jsw-resumeandportfolio.com/oauth2/authorization/google";
         response.sendRedirect(redirectUrl);
     }
 }
