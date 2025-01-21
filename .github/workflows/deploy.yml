@@ -27,19 +27,14 @@ jobs:
         run: |
           aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin 905418468164.dkr.ecr.ap-northeast-2.amazonaws.com
 
-      # 4. SSL 키스토어 파일 복사
-      - name: Copy SSL Keystore to Docker Build Context
-        run: |
-          cp /etc/nginx/ssl/keystore.p12 ./backend/Resume-And-Portfolio/src/main/resources/keystore.p12
-
-      # 5. Backend Docker 이미지 빌드 및 푸시
+      # 4. Backend Docker 이미지 빌드 및 푸시
       - name: Build and push backend image
         working-directory: ./backend/Resume-And-Portfolio
         run: |
           docker build -t 905418468164.dkr.ecr.ap-northeast-2.amazonaws.com/resume-backend-app:latest .
           docker push 905418468164.dkr.ecr.ap-northeast-2.amazonaws.com/resume-backend-app:latest
 
-      # 6. Frontend Docker 이미지 빌드 및 푸시
+      # 5. Frontend Docker 이미지 빌드 및 푸시
       - name: Build and push frontend image
         working-directory: ./frontend/my-app
         run: |
@@ -47,18 +42,18 @@ jobs:
                        -t 905418468164.dkr.ecr.ap-northeast-2.amazonaws.com/resume-frontend-app:latest .
           docker push 905418468164.dkr.ecr.ap-northeast-2.amazonaws.com/resume-frontend-app:latest
 
-      # 7. SSH 키 추가
+      # 6. SSH 키 추가
       - name: Add SSH key
         run: |
           echo "${{ secrets.EC2_KEY_PAIR }}" > ec2-key.pem
           chmod 600 ec2-key.pem
 
-      # 8. docker-compose.yml 파일 복사
+      # 7. docker-compose.yml 파일 복사
       - name: Copy docker-compose.yml to EC2
         run: |
           scp -o StrictHostKeyChecking=no -i ec2-key.pem ./docker-compose.yml ubuntu@${{ secrets.EC2_PUBLIC_IP }}:/home/ubuntu/app/
 
-      # 9. EC2에 배포
+      # 8. EC2에 배포
       - name: Deploy to EC2
         run: |
           ssh -o StrictHostKeyChecking=no -i ec2-key.pem ubuntu@${{ secrets.EC2_PUBLIC_IP }} << 'EOF'
@@ -78,7 +73,10 @@ jobs:
           
             # 환경 변수 파일 생성
             echo "APPLICATION_SERVER_URL=${{ secrets.APPLICATION_SERVER_URL }}" > .env
-            echo "KEYSTORE_PASSWORD=${{ secrets.KEYSTORE_PASSWORD }}" >> .env
+            echo "SERVER_SSL_ENABLED=${{ secrets.SERVER_SSL_ENABLED }}" >> .env
+            echo "SERVER_SSL_KEY_STORE=${{ secrets.SERVER_SSL_KEY_STORE }}" >> .env
+            echo "SERVER_SSL_KEY_STORE_PASSWORD=${{ secrets.SERVER_SSL_KEY_STORE_PASSWORD }}" >> .env
+            echo "SERVER_SSL_KEY_STORE_TYPE=${{ secrets.SERVER_SSL_KEY_STORE_TYPE }}" >> .env
             echo "SPRING_DATASOURCE_URL=${{ secrets.SPRING_DATASOURCE_URL }}" >> .env
             echo "SPRING_DATASOURCE_USERNAME=${{ secrets.SPRING_DATASOURCE_USERNAME }}" >> .env
             echo "SPRING_DATASOURCE_PASSWORD=${{ secrets.SPRING_DATASOURCE_PASSWORD }}" >> .env
