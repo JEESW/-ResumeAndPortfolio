@@ -10,93 +10,99 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    # 1. 소스코드 체크아웃
-    - name: Checkout code
-      uses: actions/checkout@v3
+      # 1. 소스코드 체크아웃
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-    # 2. AWS CLI 설정
-    - name: Configure AWS CLI
-      uses: aws-actions/configure-aws-credentials@v2
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: ap-northeast-2
+      # 2. AWS CLI 설정
+      - name: Configure AWS CLI
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-northeast-2
 
-    # 3. Docker 로그인
-    - name: Log in to Amazon ECR
-      run: |
-        aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin 905418468164.dkr.ecr.ap-northeast-2.amazonaws.com
-
-    # 4. Backend Docker 이미지 빌드 및 푸시
-    - name: Build and push backend image
-      working-directory: ./backend/Resume-And-Portfolio
-      run: |
-        docker build -t 905418468164.dkr.ecr.ap-northeast-2.amazonaws.com/resume-backend-app:latest .
-        docker push 905418468164.dkr.ecr.ap-northeast-2.amazonaws.com/resume-backend-app:latest
-
-    # 5. Frontend Docker 이미지 빌드 및 푸시
-    - name: Build and push frontend image
-      working-directory: ./frontend/my-app
-      run: |
-        docker build --build-arg REACT_APP_API_URL=${{ secrets.REACT_APP_API_URL }} \
-                     -t 905418468164.dkr.ecr.ap-northeast-2.amazonaws.com/resume-frontend-app:latest .
-        docker push 905418468164.dkr.ecr.ap-northeast-2.amazonaws.com/resume-frontend-app:latest
-
-    # 6. SSH 키 추가
-    - name: Add SSH key
-      run: |
-        echo "${{ secrets.EC2_KEY_PAIR }}" > ec2-key.pem
-        chmod 600 ec2-key.pem
-
-    # 7. docker-compose.yml 파일 복사
-    - name: Copy docker-compose.yml to EC2
-      run: |
-        scp -o StrictHostKeyChecking=no -i ec2-key.pem ./docker-compose.yml ubuntu@${{ secrets.EC2_PUBLIC_IP }}:/home/ubuntu/app/
-        
-    # 8. EC2에 배포
-    - name: Deploy to EC2
-      run: |
-        ssh -o StrictHostKeyChecking=no -i ec2-key.pem ubuntu@${{ secrets.EC2_PUBLIC_IP }} << 'EOF'
-          # Docker 로그인
+      # 3. Docker 로그인
+      - name: Log in to Amazon ECR
+        run: |
           aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin 905418468164.dkr.ecr.ap-northeast-2.amazonaws.com
-          cd ~/app
 
-          # Docker 리소스 정리
-          docker system prune -af
+      # 4. SSL 키스토어 파일 복사
+      - name: Copy SSL Keystore to Docker Build Context
+        run: |
+          cp /etc/nginx/ssl/keystore.p12 ./backend/Resume-And-Portfolio/src/main/resources/keystore.p12
 
-          # 기존 컨테이너 중지 및 모든 이미지 제거
-          docker-compose down
-          docker image prune -af
+      # 5. Backend Docker 이미지 빌드 및 푸시
+      - name: Build and push backend image
+        working-directory: ./backend/Resume-And-Portfolio
+        run: |
+          docker build -t 905418468164.dkr.ecr.ap-northeast-2.amazonaws.com/resume-backend-app:latest .
+          docker push 905418468164.dkr.ecr.ap-northeast-2.amazonaws.com/resume-backend-app:latest
 
-          # 최신 이미지 풀링
-          docker-compose pull
+      # 6. Frontend Docker 이미지 빌드 및 푸시
+      - name: Build and push frontend image
+        working-directory: ./frontend/my-app
+        run: |
+          docker build --build-arg REACT_APP_API_URL=${{ secrets.REACT_APP_API_URL }} \
+                       -t 905418468164.dkr.ecr.ap-northeast-2.amazonaws.com/resume-frontend-app:latest .
+          docker push 905418468164.dkr.ecr.ap-northeast-2.amazonaws.com/resume-frontend-app:latest
 
-          # 환경 변수 파일 생성
-          echo "APPLICATION_SERVER_URL=${{ secrets.APPLICATION_SERVER_URL }}" > .env
-          echo "SPRING_DATASOURCE_URL=${{ secrets.SPRING_DATASOURCE_URL }}" >> .env
-          echo "SPRING_DATASOURCE_USERNAME=${{ secrets.SPRING_DATASOURCE_USERNAME }}" >> .env
-          echo "SPRING_DATASOURCE_PASSWORD=${{ secrets.SPRING_DATASOURCE_PASSWORD }}" >> .env
-          echo "SPRING_JPA_HIBERNATE_DDL_AUTO=${{ secrets.SPRING_JPA_HIBERNATE_DDL_AUTO }}" >> .env
-          echo "SPRING_JPA_SHOW_SQL=${{ secrets.SPRING_JPA_SHOW_SQL }}" >> .env
-          echo "REACT_APP_API_URL=${{ secrets.REACT_APP_API_URL }}" >> .env
-          echo "SPRING_DATA_REDIS_HOST=${{ secrets.SPRING_DATA_REDIS_HOST }}" >> .env
-          echo "SPRING_DATA_REDIS_PORT=${{ secrets.SPRING_DATA_REDIS_PORT }}" >> .env
-          echo "SPRING_DATA_REDIS_PASSWORD=${{ secrets.SPRING_DATA_REDIS_PASSWORD }}" >> .env
-          echo "SPRING_JWT_SECRET_KEY=${{ secrets.SPRING_JWT_SECRET_KEY }}" >> .env
-          echo "SPRING_MAIL_HOST=${{ secrets.SPRING_MAIL_HOST }}" >> .env
-          echo "SPRING_MAIL_PORT=${{ secrets.SPRING_MAIL_PORT }}" >> .env
-          echo "SPRING_MAIL_USERNAME=${{ secrets.SPRING_MAIL_USERNAME }}" >> .env
-          echo "SPRING_MAIL_PASSWORD=${{ secrets.SPRING_MAIL_PASSWORD }}" >> .env
-          echo "SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH=${{ secrets.SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH }}" >> .env
-          echo "SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE=${{ secrets.SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE }}" >> .env
-          echo "VERIFICATION_TOKEN_EXPIRATION_HOURS=${{ secrets.VERIFICATION_TOKEN_EXPIRATION_HOURS }}" >> .env
-          echo "SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_NAME=${{ secrets.SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_NAME }}" >> .env
-          echo "SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_ID=${{ secrets.SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_ID }}" >> .env
-          echo "SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_SECRET=${{ secrets.SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_SECRET }}" >> .env
-          echo "SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_REDIRECT_URI=${{ secrets.SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_REDIRECT_URI }}" >> .env
-          echo "SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_AUTHORIZATION_GRANT_TYPE=${{ secrets.SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_AUTHORIZATION_GRANT_TYPE }}" >> .env
-          echo "SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_SCOPE=${{ secrets.SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_SCOPE }}" >> .env
+      # 7. SSH 키 추가
+      - name: Add SSH key
+        run: |
+          echo "${{ secrets.EC2_KEY_PAIR }}" > ec2-key.pem
+          chmod 600 ec2-key.pem
 
-          # 컨테이너 재시작
-          docker-compose up -d
-        EOF
+      # 8. docker-compose.yml 파일 복사
+      - name: Copy docker-compose.yml to EC2
+        run: |
+          scp -o StrictHostKeyChecking=no -i ec2-key.pem ./docker-compose.yml ubuntu@${{ secrets.EC2_PUBLIC_IP }}:/home/ubuntu/app/
+
+      # 9. EC2에 배포
+      - name: Deploy to EC2
+        run: |
+          ssh -o StrictHostKeyChecking=no -i ec2-key.pem ubuntu@${{ secrets.EC2_PUBLIC_IP }} << 'EOF'
+            # Docker 로그인
+            aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin 905418468164.dkr.ecr.ap-northeast-2.amazonaws.com
+            cd ~/app
+          
+            # Docker 리소스 정리
+            docker system prune -af
+          
+            # 기존 컨테이너 중지 및 모든 이미지 제거
+            docker-compose down
+            docker image prune -af
+          
+            # 최신 이미지 풀링
+            docker-compose pull
+          
+            # 환경 변수 파일 생성
+            echo "APPLICATION_SERVER_URL=${{ secrets.APPLICATION_SERVER_URL }}" > .env
+            echo "KEYSTORE_PASSWORD=${{ secrets.KEYSTORE_PASSWORD }}" >> .env
+            echo "SPRING_DATASOURCE_URL=${{ secrets.SPRING_DATASOURCE_URL }}" >> .env
+            echo "SPRING_DATASOURCE_USERNAME=${{ secrets.SPRING_DATASOURCE_USERNAME }}" >> .env
+            echo "SPRING_DATASOURCE_PASSWORD=${{ secrets.SPRING_DATASOURCE_PASSWORD }}" >> .env
+            echo "SPRING_JPA_HIBERNATE_DDL_AUTO=${{ secrets.SPRING_JPA_HIBERNATE_DDL_AUTO }}" >> .env
+            echo "SPRING_JPA_SHOW_SQL=${{ secrets.SPRING_JPA_SHOW_SQL }}" >> .env
+            echo "REACT_APP_API_URL=${{ secrets.REACT_APP_API_URL }}" >> .env
+            echo "SPRING_DATA_REDIS_HOST=${{ secrets.SPRING_DATA_REDIS_HOST }}" >> .env
+            echo "SPRING_DATA_REDIS_PORT=${{ secrets.SPRING_DATA_REDIS_PORT }}" >> .env
+            echo "SPRING_DATA_REDIS_PASSWORD=${{ secrets.SPRING_DATA_REDIS_PASSWORD }}" >> .env
+            echo "SPRING_JWT_SECRET_KEY=${{ secrets.SPRING_JWT_SECRET_KEY }}" >> .env
+            echo "SPRING_MAIL_HOST=${{ secrets.SPRING_MAIL_HOST }}" >> .env
+            echo "SPRING_MAIL_PORT=${{ secrets.SPRING_MAIL_PORT }}" >> .env
+            echo "SPRING_MAIL_USERNAME=${{ secrets.SPRING_MAIL_USERNAME }}" >> .env
+            echo "SPRING_MAIL_PASSWORD=${{ secrets.SPRING_MAIL_PASSWORD }}" >> .env
+            echo "SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH=${{ secrets.SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH }}" >> .env
+            echo "SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE=${{ secrets.SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE }}" >> .env
+            echo "VERIFICATION_TOKEN_EXPIRATION_HOURS=${{ secrets.VERIFICATION_TOKEN_EXPIRATION_HOURS }}" >> .env
+            echo "SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_NAME=${{ secrets.SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_NAME }}" >> .env
+            echo "SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_ID=${{ secrets.SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_ID }}" >> .env
+            echo "SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_SECRET=${{ secrets.SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_SECRET }}" >> .env
+            echo "SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_REDIRECT_URI=${{ secrets.SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_REDIRECT_URI }}" >> .env
+            echo "SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_AUTHORIZATION_GRANT_TYPE=${{ secrets.SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_AUTHORIZATION_GRANT_TYPE }}" >> .env
+            echo "SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_SCOPE=${{ secrets.SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_SCOPE }}" >> .env
+          
+            # 컨테이너 재시작
+            docker-compose up -d
+          EOF
