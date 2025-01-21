@@ -14,7 +14,7 @@ const Login = () => {
 
     try {
       const response = await axios.post(
-          "https://jsw-resumeandportfolio.com/api/users/login",
+          "https://www.jsw-resumeandportfolio.com/api/users/login",
           {
             email,
             password,
@@ -76,7 +76,7 @@ const Login = () => {
           </form>
           <div className="mt-6 text-center">
             <a
-                href="https://jsw-resumeandportfolio.com/api/users/oauth/google"
+                href="https://www.jsw-resumeandportfolio.com/api/users/oauth/google"
                 className="block bg-gray-200 py-2 rounded-lg shadow hover:bg-gray-300"
             >
               Sign in with Google
