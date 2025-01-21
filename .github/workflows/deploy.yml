@@ -72,7 +72,8 @@ jobs:
             docker-compose pull
           
             # 환경 변수 파일 생성
-            echo "APPLICATION_SERVER_URL=${{ secrets.APPLICATION_SERVER_URL }}" > .env
+            echo "SERVER_PORT=${{ secrets.SERVER_PORT }}" > .env
+            echo "APPLICATION_SERVER_URL=${{ secrets.APPLICATION_SERVER_URL }}" >> .env
             echo "SERVER_SSL_ENABLED=${{ secrets.SERVER_SSL_ENABLED }}" >> .env
             echo "SERVER_SSL_KEY_STORE=${{ secrets.SERVER_SSL_KEY_STORE }}" >> .env
             echo "SERVER_SSL_KEY_STORE_PASSWORD=${{ secrets.SERVER_SSL_KEY_STORE_PASSWORD }}" >> .env
