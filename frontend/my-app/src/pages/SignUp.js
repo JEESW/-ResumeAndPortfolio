@@ -34,7 +34,7 @@ const SignUp = () => {
 
     try {
       // 백엔드의 UserRegisterRequest 요구사항을 맞추기 위해 임의 값 포함
-      await axios.post("https://jsw-resumeandportfolio.com/api/users/register/initiate", {
+      await axios.post("https://www.jsw-resumeandportfolio.com/api/users/register/initiate", {
         email,
         password: "temporary123", // 임시 비밀번호
         confirmPassword: "temporary123", // 임시 비밀번호 확인
@@ -53,7 +53,7 @@ const SignUp = () => {
   const handleTokenCheck = async () => {
     try {
       await axios.post(
-          "https://jsw-resumeandportfolio.com/api/users/register/complete",
+          "https://www.jsw-resumeandportfolio.com/api/users/register/complete",
           { token }
       );
       setTokenValid(true);
@@ -84,7 +84,7 @@ const SignUp = () => {
     }
 
     try {
-      await axios.post("https://jsw-resumeandportfolio.com/api/users/register/complete", {
+      await axios.post("https://www.jsw-resumeandportfolio.com/api/users/register/complete", {
         token,
         password,
         nickname,

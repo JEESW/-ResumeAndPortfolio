@@ -7,20 +7,46 @@ const Header = () => {
   const navigate = useNavigate();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const nickname = "nickname";
+  const [nickname, setNickname] = useState("");
 
   // 로그인 상태 확인 (로컬 스토리지에서 JWT 확인)
   useEffect(() => {
     const token = localStorage.getItem("accessToken");
     setIsLoggedIn(!!token); // 토큰이 존재하면 로그인 상태로 설정
+
+    // 사용자 정보 조회 API 호출
+    if (token) {
+      fetchUserInfo();
+    }
   }, []);
+
+  // 현재 사용자 정보 조회
+  const fetchUserInfo = async () => {
+    try {
+      const response = await axios.get(
+          "https://www.jsw-resumeandportfolio.com/api/users/me",
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("accessToken")}`, // JWT 토큰을 헤더에 추가
+            },
+          }
+      );
+      setNickname(response.data.nickname); // 닉네임 설정
+    } catch (error) {
+      console.error("Failed to fetch user info:", error);
+      if (error.response && error.response.status === 401) {
+        alert("로그인이 필요합니다.");
+        navigate("/login");
+      }
+    }
+  };
 
   // 로그아웃 핸들러
   const handleLogout = async () => {
     try {
       // 백엔드로 로그아웃 요청
       await axios.post(
-          "https://jsw-resumeandportfolio.com/api/users/logout",
+          "https://www.jsw-resumeandportfolio.com/api/users/logout",
           {}, // 로그아웃 요청에 데이터 필요 없음
           {withCredentials: true} // 쿠키 포함 설정
       );
