@@ -76,7 +76,7 @@ const Login = () => {
           </form>
           <div className="mt-6 text-center">
             <a
-                href="https://www.jsw-resumeandportfolio.com/api/users/oauth/google"
+                href="https://www.jsw-resumeandportfolio.com/api/users/oauth2/authorization/google"
                 className="block bg-gray-200 py-2 rounded-lg shadow hover:bg-gray-300"
             >
               Sign in with Google
