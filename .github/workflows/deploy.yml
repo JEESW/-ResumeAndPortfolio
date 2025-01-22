@@ -73,6 +73,7 @@ jobs:
           
             # 환경 변수 파일 생성
             echo "SERVER_PORT=${{ secrets.SERVER_PORT }}" > .env
+            echo "SERVER_FORWARD_HEADERS_STRATEGY=${{ secrets.SERVER_FORWARD_HEADERS_STRATEGY }}" >> .env
             echo "APPLICATION_SERVER_URL=${{ secrets.APPLICATION_SERVER_URL }}" >> .env
             echo "SPRING_DATASOURCE_URL=${{ secrets.SPRING_DATASOURCE_URL }}" >> .env
             echo "SPRING_DATASOURCE_USERNAME=${{ secrets.SPRING_DATASOURCE_USERNAME }}" >> .env
