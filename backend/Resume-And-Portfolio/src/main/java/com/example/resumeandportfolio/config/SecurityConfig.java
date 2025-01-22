@@ -63,6 +63,10 @@ public class SecurityConfig {
                     return configuration;
                 }
             }))
+            .requiresChannel(channel -> channel
+                .anyRequest()
+                .requiresSecure()
+            )
             .formLogin(formLogin -> formLogin.disable())
             .httpBasic(httpBasic -> httpBasic.disable())
             .oauth2Login(oauth2 -> oauth2
