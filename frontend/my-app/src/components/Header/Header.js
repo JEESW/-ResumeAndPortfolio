@@ -9,14 +9,30 @@ const Header = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [nickname, setNickname] = useState("");
 
-  // 로그인 상태 확인 (로컬 스토리지에서 JWT 확인)
+  // 로그인 상태 확인 (로컬 스토리지에서 JWT 확인 및 OAuth 로그인 처리)
   useEffect(() => {
-    const token = localStorage.getItem("accessToken");
-    setIsLoggedIn(!!token); // 토큰이 존재하면 로그인 상태로 설정
+    const queryParams = new URLSearchParams(window.location.search);
+    const accessToken = queryParams.get("accessToken"); // 백엔드에서 전달된 Access Token
+    const refreshTokenCookie = document.cookie.includes("refresh"); // Refresh Token 확인
 
-    // 사용자 정보 조회 API 호출
-    if (token) {
+    if (accessToken && refreshTokenCookie) {
+      // Access Token을 로컬 스토리지에 저장
+      localStorage.setItem("accessToken", accessToken);
+
+      // 로그인 상태 업데이트 및 사용자 정보 조회
+      setIsLoggedIn(true);
       fetchUserInfo();
+
+      // URL에서 쿼리 파라미터 제거
+      window.history.replaceState(null, "", window.location.pathname);
+    } else {
+      const token = localStorage.getItem("accessToken");
+      setIsLoggedIn(!!token); // 토큰이 존재하면 로그인 상태로 설정
+
+      // 사용자 정보 조회 API 호출
+      if (token) {
+        fetchUserInfo();
+      }
     }
   }, []);
 
@@ -69,7 +85,8 @@ const Header = () => {
       <>
         <header className="bg-white shadow-md">
           <div
-              className="container mx-auto px-4 py-3 flex justify-between items-center">
+              className="container mx-auto px-4 py-3 flex justify-between items-center"
+          >
             {/* 로고 */}
             <div className="text-lg font-bold text-blue-600">
               <a href="/" className="text-blue-600">
