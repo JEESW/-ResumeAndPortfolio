@@ -33,6 +33,10 @@ const Login = () => {
     }
   };
 
+  const handleGoogleLogin = () => {
+    window.location.href = "https://www.jsw-resumeandportfolio.com/api/users/oauth2/authorization/google";
+  };
+
   return (
       <div
           className="min-h-screen bg-gray-100 flex items-center justify-center">
@@ -75,12 +79,12 @@ const Login = () => {
             </button>
           </form>
           <div className="mt-6 text-center">
-            <a
-                href="https://www.jsw-resumeandportfolio.com/api/users/oauth2/authorization/google"
-                className="block bg-gray-200 py-2 rounded-lg shadow hover:bg-gray-300"
+            <button
+                onClick={handleGoogleLogin}
+                className="block w-full bg-gray-200 py-2 rounded-lg shadow hover:bg-gray-300"
             >
               Sign in with Google
-            </a>
+            </button>
             <p className="mt-4 text-gray-600 text-sm">
               Don't have an account?{" "}
               <span
