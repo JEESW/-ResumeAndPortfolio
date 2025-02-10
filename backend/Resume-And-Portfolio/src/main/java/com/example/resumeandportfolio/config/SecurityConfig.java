@@ -54,9 +54,9 @@ public class SecurityConfig {
 
                     configuration.setAllowedOrigins(
                         Collections.singletonList("https://www.jsw-resumeandportfolio.com"));
-                    configuration.setAllowedMethods(Collections.singletonList("*"));
+                    configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE"));
                     configuration.setAllowCredentials(true);
-                    configuration.setAllowedHeaders(Collections.singletonList("*"));
+                    configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Set-Cookie"));
                     configuration.setMaxAge(3600L);
                     configuration.setExposedHeaders(Arrays.asList("Set-Cookie", "Authorization"));
 

@@ -3,7 +3,7 @@ services:
   backend:
     image: 905418468164.dkr.ecr.ap-northeast-2.amazonaws.com/resume-backend-app:latest
     ports:
-      - "8080:8080"
+      - "443:443"
     environment:
       - SERVER_PORT=${SERVER_PORT}
       - SERVER_FORWARD_HEADERS_STRATEGY=${SERVER_FORWARD_HEADERS_STRATEGY}
